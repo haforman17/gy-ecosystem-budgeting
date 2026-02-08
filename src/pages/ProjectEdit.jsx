@@ -63,7 +63,16 @@ export default function ProjectEdit() {
   }, [project]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.update(projectId, data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Project.update(projectId, data);
+      await base44.entities.AuditLog.create({
+        action: "Updated Project",
+        entity_type: "Project",
+        entity_id: projectId,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });

@@ -43,7 +43,16 @@ export default function ProjectNew() {
   const [errors, setErrors] = useState({});
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Project.create(data);
+      await base44.entities.AuditLog.create({
+        action: "Created Project",
+        entity_type: "Project",
+        entity_id: result.id,
+        project_id: result.id,
+      });
+      return result;
+    },
     onSuccess: (result) => {
       toast.success("Project created successfully");
       navigate(createPageUrl(`ProjectDetail?id=${result.id}`));
