@@ -171,11 +171,16 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Year</Label>
-              <Input
-                value={form.vintage}
-                onChange={(e) => updateField("vintage", e.target.value)}
-                placeholder="e.g. 2025"
-              />
+              <Select value={form.vintage} onValueChange={(v) => updateField("vintage", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
