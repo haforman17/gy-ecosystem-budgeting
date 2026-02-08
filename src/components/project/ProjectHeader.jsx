@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
-import { ArrowLeft, MapPin, Calendar, Ruler, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 
-export default function ProjectHeader({ project, onEdit, onDelete }) {
+export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -35,6 +35,16 @@ export default function ProjectHeader({ project, onEdit, onDelete }) {
               </div>
             </div>
             <div className="flex gap-2">
+              {onFinancials && (
+                <Button variant="outline" size="sm" onClick={onFinancials}>
+                  <FileText className="h-3.5 w-3.5 mr-1.5" /> Financials
+                </Button>
+              )}
+              {onForecast && (
+                <Button variant="outline" size="sm" onClick={onForecast}>
+                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Forecast
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
               </Button>
