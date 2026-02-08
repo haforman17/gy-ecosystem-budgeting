@@ -136,18 +136,9 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm">Vintage</Label>
-            <Input
-              value={form.vintage}
-              onChange={(e) => updateField("vintage", e.target.value)}
-              placeholder="e.g. 2025"
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-sm">Est. Volume *</Label>
+              <Label className="text-sm">Est. Vol. *</Label>
               <Input
                 type="number" step="0.01" min="0"
                 value={form.estimated_volume}
@@ -185,7 +176,7 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Real Price/Unit (£)</Label>
+              <Label className="text-sm">Real Avg Price/Unit (£)</Label>
               <Input
                 type="number" step="0.01" min="0"
                 value={form.actual_price_per_unit}
@@ -216,11 +207,11 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Date of Sale</Label>
+              <Label className="text-sm">Year</Label>
               <Input
-                type="date"
-                value={form.date_of_sale}
-                onChange={(e) => updateField("date_of_sale", e.target.value)}
+                value={form.vintage}
+                onChange={(e) => updateField("vintage", e.target.value)}
+                placeholder="e.g. 2025"
               />
             </div>
           </div>

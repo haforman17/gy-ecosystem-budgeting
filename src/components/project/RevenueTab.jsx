@@ -70,15 +70,14 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                     <TableRow className="bg-slate-50/60">
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Ecosystem Services</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Description</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Vintage</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Est. Vol.</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Est. Price/Unit</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Est. Revenue</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Real Volume</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Real Price/Unit</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Real Avg Price/Unit</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Real Revenue</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Status</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Date of Sale</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Year</TableHead>
                       <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
@@ -87,7 +86,6 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                       <TableRow key={rs.id}>
                         <TableCell><StatusBadge value={rs.credit_type} /></TableCell>
                         <TableCell className="text-sm text-slate-700">{rs.description}</TableCell>
-                        <TableCell className="text-xs text-slate-500">{rs.vintage || "—"}</TableCell>
                         <TableCell className="text-right text-sm">{formatNumber(rs.estimated_volume)}</TableCell>
                         <TableCell className="text-right text-sm">{formatCurrency(rs.estimated_price_per_unit || rs.price_per_unit)}</TableCell>
                         <TableCell className="text-right text-sm font-medium text-emerald-700">
@@ -99,9 +97,7 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                           {formatCurrency(rs.actual_revenue || ((rs.actual_volume || 0) * (rs.actual_price_per_unit || 0)))}
                         </TableCell>
                         <TableCell><StatusBadge value={rs.verification_status} /></TableCell>
-                        <TableCell className="text-xs text-slate-500">
-                          {rs.date_of_sale ? format(new Date(rs.date_of_sale), "dd MMM yy") : "—"}
-                        </TableCell>
+                        <TableCell className="text-xs text-slate-500">{rs.vintage || "—"}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
