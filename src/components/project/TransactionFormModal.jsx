@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "../shared/CurrencyFormat";
 
@@ -32,8 +32,10 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     units_quantity: transaction?.units_quantity || "",
     unit_price: transaction?.unit_price || "",
     sale_date: transaction?.sale_date || "",
+    receipt_url: transaction?.receipt_url || "",
   });
   const [errors, setErrors] = useState({});
+  const [uploading, setUploading] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const vintageYears = Array.from({ length: 20 }, (_, i) => currentYear - 5 + i);
@@ -72,6 +74,28 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     return Object.keys(errs).length === 0;
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      updateField("receipt_url", file_url);
+      toast.success("Receipt uploaded");
+    } catch (error) {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -81,6 +105,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
       date: isRevenue ? form.sale_date : form.date,
       description: form.description,
       reference: form.reference || undefined,
+      receipt_url: form.receipt_url || undefined,
     };
     if (form.line_item_id) data.line_item_id = form.line_item_id;
     if (form.revenue_stream_id) data.revenue_stream_id = form.revenue_stream_id;
@@ -292,7 +317,47 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
             </>
           )}
 
-
+          <div className="space-y-1.5">
+            <Label className="text-sm">Receipt / Document</Label>
+            {form.receipt_url ? (
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-slate-50">
+                <FileText className="h-4 w-4 text-slate-500" />
+                <a
+                  href={form.receipt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline flex-1 truncate"
+                >
+                  View receipt
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => updateField("receipt_url", "")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="cursor-pointer"
+                />
+                {uploading && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-slate-500">Upload receipt, invoice, or supporting document (max 10MB)</p>
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

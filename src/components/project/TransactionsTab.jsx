@@ -9,7 +9,7 @@ import { formatCurrency } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, Receipt, Download, MoreVertical, Pencil, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Receipt, Download, MoreVertical, Pencil, FileSpreadsheet, Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import TransactionFormModal from "./TransactionFormModal";
@@ -163,6 +163,9 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase">Related To</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase">Funding</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase">Reference</TableHead>
+                    <TableHead className="w-10 text-center">
+                      <Paperclip className="h-3.5 w-3.5 text-slate-400 mx-auto" />
+                    </TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -181,6 +184,21 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <TableCell className="text-xs text-slate-500">{getRelatedName(tx)}</TableCell>
                       <TableCell className="text-xs text-slate-500">{getFundingName(tx)}</TableCell>
                       <TableCell className="text-xs text-slate-400">{tx.reference || "—"}</TableCell>
+                      <TableCell className="text-center">
+                        {tx.receipt_url ? (
+                          <a
+                            href={tx.receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center hover:bg-slate-100 rounded p-1"
+                            title="View receipt"
+                          >
+                            <Paperclip className="h-3.5 w-3.5 text-emerald-600" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
