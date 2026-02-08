@@ -217,14 +217,31 @@ export default function Reports() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {report.status === "COMPLETED" && report.file_url && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => window.open(report.file_url, "_blank")}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => window.open(report.file_url, "_blank")}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = report.file_url;
+                                    link.download = `${report.report_name}.${report.format.toLowerCase()}`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                           </div>
                         </TableCell>
