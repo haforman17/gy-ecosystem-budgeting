@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrency } from "../shared/CurrencyFormat";
+import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { format } from "date-fns";
 import { TrendingUp, TrendingDown } from "lucide-react";
 

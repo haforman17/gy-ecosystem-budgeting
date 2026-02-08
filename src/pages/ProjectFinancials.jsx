@@ -7,17 +7,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Download } from "lucide-react";
-import LoadingState from "../components/shared/LoadingState";
-import IncomeStatementTab from "../components/financials/IncomeStatementTab";
-import BalanceSheetTab from "../components/financials/BalanceSheetTab";
-import CashFlowTab from "../components/financials/CashFlowTab";
-import EquityStatementTab from "../components/financials/EquityStatementTab";
+import LoadingState from "@/components/shared/LoadingState";
+import IncomeStatementTab from "@/components/financials/IncomeStatementTab";
+import BalanceSheetTab from "@/components/financials/BalanceSheetTab";
+import CashFlowTab from "@/components/financials/CashFlowTab";
+import EquityStatementTab from "@/components/financials/EquityStatementTab";
 import {
   calculateIncomeStatement,
   calculateBalanceSheet,
   calculateCashFlowStatement,
   calculateEquityStatement,
-} from "../components/lib/calculations";
+} from "@/components/lib/calculations";
 import { startOfYear, endOfYear, subYears, startOfMonth, endOfMonth } from "date-fns";
 
 export default function ProjectFinancials() {
