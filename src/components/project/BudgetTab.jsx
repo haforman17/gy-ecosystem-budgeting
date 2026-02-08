@@ -8,16 +8,18 @@ import { formatCurrency } from "../shared/CurrencyFormat";
 import { getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Plus, Trash2, FileText, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import LineItemFormModal from "./LineItemFormModal";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#d97706", "#4f46e5", "#16a34a", "#64748b", "#dc2626", "#8b5cf6"];
 
 export default function BudgetTab({ projectId, lineItems }) {
   const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
 
@@ -95,9 +97,21 @@ export default function BudgetTab({ projectId, lineItems }) {
                               {li.date ? format(new Date(li.date), "dd MMM yy") : "—"}
                             </TableCell>
                             <TableCell>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(li.id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setEditItem(li)}>
+                                    <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setDeleteId(li.id)} className="text-red-600">
+                                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         );
@@ -141,6 +155,10 @@ export default function BudgetTab({ projectId, lineItems }) {
 
       {showForm && (
         <LineItemFormModal projectId={projectId} onClose={() => setShowForm(false)} />
+      )}
+
+      {editItem && (
+        <LineItemFormModal projectId={projectId} item={editItem} onClose={() => setEditItem(null)} />
       )}
 
       <ConfirmDialog

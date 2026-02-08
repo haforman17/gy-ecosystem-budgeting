@@ -8,15 +8,17 @@ import { formatCurrency, formatNumber } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, Droplets } from "lucide-react";
+import { Plus, Trash2, Droplets, MoreVertical, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import RevenueFormModal from "./RevenueFormModal";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#d97706"];
 
 export default function RevenueTab({ projectId, revenueStreams }) {
   const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
 
@@ -90,9 +92,21 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                         </TableCell>
                         <TableCell><StatusBadge value={rs.verification_status} /></TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(rs.id)}>
-                            <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setEditItem(rs)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDeleteId(rs.id)} className="text-red-600">
+                                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -125,6 +139,8 @@ export default function RevenueTab({ projectId, revenueStreams }) {
       )}
 
       {showForm && <RevenueFormModal projectId={projectId} onClose={() => setShowForm(false)} />}
+
+      {editItem && <RevenueFormModal projectId={projectId} item={editItem} onClose={() => setEditItem(null)} />}
 
       <ConfirmDialog
         open={!!deleteId}

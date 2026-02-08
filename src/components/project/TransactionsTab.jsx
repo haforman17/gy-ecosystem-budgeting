@@ -9,13 +9,15 @@ import { formatCurrency } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, Receipt, Download } from "lucide-react";
+import { Plus, Trash2, Receipt, Download, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import TransactionFormModal from "./TransactionFormModal";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function TransactionsTab({ projectId, transactions, lineItems, revenueStreams, fundingSources }) {
   const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [filterType, setFilterType] = useState("ALL");
   const queryClient = useQueryClient();
@@ -150,9 +152,21 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <TableCell className="text-xs text-slate-500">{getFundingName(tx)}</TableCell>
                       <TableCell className="text-xs text-slate-400">{tx.reference || "—"}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(tx.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditItem(tx)}>
+                              <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDeleteId(tx.id)} className="text-red-600">
+                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -170,6 +184,17 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
           revenueStreams={revenueStreams}
           fundingSources={fundingSources}
           onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {editItem && (
+        <TransactionFormModal
+          projectId={projectId}
+          transaction={editItem}
+          lineItems={lineItems}
+          revenueStreams={revenueStreams}
+          fundingSources={fundingSources}
+          onClose={() => setEditItem(null)}
         />
       )}
 
