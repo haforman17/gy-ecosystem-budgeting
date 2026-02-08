@@ -50,7 +50,16 @@ export default function FundingFormModal({ projectId, item, onClose }) {
   const isGrant = form.funding_type === "GRANT";
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.FundingSource.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.FundingSource.create(data);
+      await base44.entities.AuditLog.create({
+        action: "Created Funding Source",
+        entity_type: "FundingSource",
+        entity_id: result.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fundingSources", projectId] });
       toast.success("Funding source added");
@@ -59,7 +68,16 @@ export default function FundingFormModal({ projectId, item, onClose }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.FundingSource.update(item.id, data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.FundingSource.update(item.id, data);
+      await base44.entities.AuditLog.create({
+        action: "Updated Funding Source",
+        entity_type: "FundingSource",
+        entity_id: item.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fundingSources", projectId] });
       toast.success("Funding source updated");

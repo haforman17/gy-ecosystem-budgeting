@@ -34,7 +34,16 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
   const [errors, setErrors] = useState({});
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.LineItem.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.LineItem.create(data);
+      await base44.entities.AuditLog.create({
+        action: "Created Line Item",
+        entity_type: "LineItem",
+        entity_id: result.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
       toast.success("Line item added");
@@ -43,7 +52,16 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.LineItem.update(item.id, data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.LineItem.update(item.id, data);
+      await base44.entities.AuditLog.create({
+        action: "Updated Line Item",
+        entity_type: "LineItem",
+        entity_id: item.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
       toast.success("Line item updated");

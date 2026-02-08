@@ -34,7 +34,16 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
   const [errors, setErrors] = useState({});
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.RevenueStream.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.RevenueStream.create(data);
+      await base44.entities.AuditLog.create({
+        action: "Created Revenue Stream",
+        entity_type: "RevenueStream",
+        entity_id: result.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
       toast.success("Revenue stream added");
@@ -43,7 +52,16 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RevenueStream.update(item.id, data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.RevenueStream.update(item.id, data);
+      await base44.entities.AuditLog.create({
+        action: "Updated Revenue Stream",
+        entity_type: "RevenueStream",
+        entity_id: item.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
       toast.success("Revenue stream updated");
