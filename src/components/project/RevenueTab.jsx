@@ -12,6 +12,7 @@ import { Plus, Trash2, Droplets, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import RevenueFormModal from "./RevenueFormModal";
+import TransactionsModal from "./TransactionsModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -21,6 +22,7 @@ export default function RevenueTab({ projectId, revenueStreams }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedRevenue, setSelectedRevenue] = useState(null);
   const queryClient = useQueryClient();
 
   // Fetch transactions to calculate real values
@@ -120,7 +122,7 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                   </TableHeader>
                   <TableBody>
                     {revenueStreams.map((rs) => (
-                      <TableRow key={rs.id}>
+                      <TableRow key={rs.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setSelectedRevenue(rs)}>
                         <TableCell><StatusBadge value={rs.credit_type} /></TableCell>
                         <TableCell className="text-sm text-slate-700">{rs.description}</TableCell>
                         <TableCell className="text-right text-sm">{formatNumber(rs.estimated_volume)}</TableCell>
@@ -135,7 +137,7 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                         </TableCell>
                         <TableCell><StatusBadge value={rs.verification_status} /></TableCell>
                         <TableCell className="text-xs text-slate-500">{rs.vintage || "—"}</TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -194,6 +196,17 @@ export default function RevenueTab({ projectId, revenueStreams }) {
         onConfirm={() => deleteMutation.mutate(deleteId)}
         destructive
       />
+
+      {selectedRevenue && (
+        <TransactionsModal
+          open={!!selectedRevenue}
+          onClose={() => setSelectedRevenue(null)}
+          title={`${getLabel(selectedRevenue.credit_type)} - ${selectedRevenue.description}`}
+          transactions={transactions.filter(
+            (tx) => tx.transaction_type === "REVENUE" && tx.revenue_stream_id === selectedRevenue.id
+          )}
+        />
+      )}
     </div>
   );
 }
