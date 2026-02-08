@@ -360,8 +360,17 @@ export default function ProjectForecast() {
         <CardContent>
           <EditableForecastTable
             forecastData={forecastData}
-            onUpdatePeriod={(period) => updatePeriodMutation.mutate(period)}
-            isSaved={savedPeriods.length > 0}
+            onUpdatePeriod={(period) => {
+              if (savedPeriods.length > 0) {
+                updatePeriodMutation.mutate(period);
+              } else {
+                // Update local forecast data
+                const updated = forecastData.map(p => 
+                  p.year === period.year ? { ...p, ...period, projected_cash_flow: period.projected_revenue - period.projected_expenses } : p
+                );
+                setSavedPeriods(updated);
+              }
+            }}
           />
           
           <Table className="mt-4">
@@ -378,7 +387,7 @@ export default function ProjectForecast() {
                 </TableCell>
                 <TableCell className="text-right">{totals.carbon.toLocaleString()}</TableCell>
                 <TableCell className="text-right">{totals.bng.toLocaleString()}</TableCell>
-                {savedPeriods.length > 0 && <TableCell className="w-24"></TableCell>}
+                <TableCell className="w-24"></TableCell>
               </TableRow>
             </TableBody>
           </Table>

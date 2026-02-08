@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Save, X, Check } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 
-export default function EditableForecastTable({ forecastData, onUpdatePeriod, isSaved }) {
+export default function EditableForecastTable({ forecastData, onUpdatePeriod }) {
   const [editingRow, setEditingRow] = useState(null);
   const [editedData, setEditedData] = useState({});
 
@@ -46,7 +46,7 @@ export default function EditableForecastTable({ forecastData, onUpdatePeriod, is
             <TableHead className="text-xs font-semibold text-right">Cumulative</TableHead>
             <TableHead className="text-xs font-semibold text-right">Carbon (tCO2e)</TableHead>
             <TableHead className="text-xs font-semibold text-right">BNG (units)</TableHead>
-            {isSaved && <TableHead className="text-xs font-semibold w-24">Actions</TableHead>}
+            <TableHead className="text-xs font-semibold w-24">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -123,29 +123,27 @@ export default function EditableForecastTable({ forecastData, onUpdatePeriod, is
                   )}
                 </TableCell>
 
-                {isSaved && (
-                  <TableCell>
-                    {isEditing ? (
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}>
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}>
-                          <X className="h-3.5 w-3.5 text-slate-500" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => startEdit(period)}
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-slate-400" />
+                <TableCell>
+                  {isEditing ? (
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
                       </Button>
-                    )}
-                  </TableCell>
-                )}
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}>
+                        <X className="h-3.5 w-3.5 text-slate-500" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => startEdit(period)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-slate-400" />
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             );
           })}
