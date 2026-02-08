@@ -28,6 +28,7 @@ export default function RevenueTab({ projectId, revenueStreams }) {
     queryKey: ["transactions", projectId],
     queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
     initialData: [],
+    enabled: !!projectId,
   });
 
   // Calculate real values from transactions for each revenue stream
@@ -37,8 +38,17 @@ export default function RevenueTab({ projectId, revenueStreams }) {
       const relatedTxs = transactions.filter(
         (tx) => tx.transaction_type === "REVENUE" && tx.revenue_stream_id === rs.id
       );
-      const totalQuantity = relatedTxs.reduce((sum, tx) => sum + (tx.units_quantity || 0), 0);
-      const totalRevenue = relatedTxs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+      
+      const totalQuantity = relatedTxs.reduce((sum, tx) => {
+        const qty = Number(tx.units_quantity) || 0;
+        return sum + qty;
+      }, 0);
+      
+      const totalRevenue = relatedTxs.reduce((sum, tx) => {
+        const amt = Number(tx.amount) || 0;
+        return sum + amt;
+      }, 0);
+      
       const avgPrice = totalQuantity > 0 ? totalRevenue / totalQuantity : 0;
       
       calcs[rs.id] = {
