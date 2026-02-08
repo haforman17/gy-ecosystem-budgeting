@@ -141,7 +141,9 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                     </SelectTrigger>
                     <SelectContent>
                       {revenueStreams.map((rs) => (
-                        <SelectItem key={rs.id} value={rs.id}>{rs.description}</SelectItem>
+                        <SelectItem key={rs.id} value={rs.id}>
+                          {rs.credit_type} - {rs.description}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
