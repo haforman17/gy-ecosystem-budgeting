@@ -29,12 +29,20 @@ const categoryLabels = {
   SURVEYS: "Surveys", EQUIPMENT: "Equipment", LABOR: "Labour", OVERHEAD: "Overhead",
 };
 
-export default function FundingFormModal({ projectId, onClose }) {
+export default function FundingFormModal({ projectId, item, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
-    funding_type: "", funder_name: "", total_amount: "", interest_rate: "",
-    repayment_term_months: "", start_date: "", end_date: "", terms: "",
-    eligible_categories: [],
+    funding_type: item?.funding_type || "",
+    funder_name: item?.funder_name || "",
+    total_amount: item?.total_amount || "",
+    drawn_amount: item?.drawn_amount || "",
+    interest_rate: item?.interest_rate || "",
+    repayment_term_months: item?.repayment_term_months || "",
+    start_date: item?.start_date || "",
+    end_date: item?.end_date || "",
+    status: item?.status || "PENDING",
+    terms: item?.terms || "",
+    eligible_categories: item?.eligible_categories || [],
   });
   const [errors, setErrors] = useState({});
 
@@ -46,6 +54,15 @@ export default function FundingFormModal({ projectId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fundingSources", projectId] });
       toast.success("Funding source added");
+      onClose();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.FundingSource.update(item.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fundingSources", projectId] });
+      toast.success("Funding source updated");
       onClose();
     },
   });
@@ -64,15 +81,14 @@ export default function FundingFormModal({ projectId, onClose }) {
     e.preventDefault();
     if (!validate()) return;
     const data = {
-      project_id: projectId,
       funding_type: form.funding_type,
       funder_name: form.funder_name,
       total_amount: Number(form.total_amount),
-      drawn_amount: 0,
+      drawn_amount: Number(form.drawn_amount) || 0,
       start_date: form.start_date,
       end_date: form.end_date || undefined,
       terms: form.terms || undefined,
-      status: "PENDING",
+      status: form.status,
     };
     if (isDebt) {
       data.interest_rate = form.interest_rate ? Number(form.interest_rate) : undefined;
@@ -81,7 +97,11 @@ export default function FundingFormModal({ projectId, onClose }) {
     if (isGrant && form.eligible_categories.length > 0) {
       data.eligible_categories = form.eligible_categories;
     }
-    createMutation.mutate(data);
+    if (item) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate({ ...data, project_id: projectId });
+    }
   };
 
   const updateField = (field, value) => {
@@ -102,7 +122,7 @@ export default function FundingFormModal({ projectId, onClose }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Funding Source</DialogTitle>
+          <DialogTitle>{item ? "Edit Funding Source" : "Add Funding Source"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -130,15 +150,25 @@ export default function FundingFormModal({ projectId, onClose }) {
             {errors.funder_name && <p className="text-xs text-red-500">{errors.funder_name}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm">Total Amount (£) *</Label>
-            <Input
-              type="number" step="0.01" min="0"
-              value={form.total_amount}
-              onChange={(e) => updateField("total_amount", e.target.value)}
-              className={errors.total_amount ? "border-red-300" : ""}
-            />
-            {errors.total_amount && <p className="text-xs text-red-500">{errors.total_amount}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Total Amount (£) *</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.total_amount}
+                onChange={(e) => updateField("total_amount", e.target.value)}
+                className={errors.total_amount ? "border-red-300" : ""}
+              />
+              {errors.total_amount && <p className="text-xs text-red-500">{errors.total_amount}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Drawn Amount (£)</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.drawn_amount}
+                onChange={(e) => updateField("drawn_amount", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -155,6 +185,21 @@ export default function FundingFormModal({ projectId, onClose }) {
               <Label className="text-sm">End Date</Label>
               <Input type="date" value={form.end_date} onChange={(e) => updateField("end_date", e.target.value)} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm">Status</Label>
+            <Select value={form.status} onValueChange={(v) => updateField("status", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="DRAWN">Drawn</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isDebt && (
@@ -202,9 +247,9 @@ export default function FundingFormModal({ projectId, onClose }) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Funding Source
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {item ? "Update Funding Source" : "Add Funding Source"}
             </Button>
           </div>
         </form>

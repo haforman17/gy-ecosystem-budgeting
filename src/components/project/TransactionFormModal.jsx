@@ -16,11 +16,17 @@ const txTypes = [
   { value: "DEBT_REPAYMENT", label: "Debt Repayment" },
 ];
 
-export default function TransactionFormModal({ projectId, lineItems, revenueStreams, fundingSources, onClose }) {
+export default function TransactionFormModal({ projectId, transaction, lineItems, revenueStreams, fundingSources, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
-    transaction_type: "", amount: "", date: "", description: "",
-    line_item_id: "", revenue_stream_id: "", funding_source_id: "", reference: "",
+    transaction_type: transaction?.transaction_type || "",
+    amount: transaction?.amount || "",
+    date: transaction?.date || "",
+    description: transaction?.description || "",
+    line_item_id: transaction?.line_item_id || "",
+    revenue_stream_id: transaction?.revenue_stream_id || "",
+    funding_source_id: transaction?.funding_source_id || "",
+    reference: transaction?.reference || "",
   });
   const [errors, setErrors] = useState({});
 
@@ -29,6 +35,15 @@ export default function TransactionFormModal({ projectId, lineItems, revenueStre
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
       toast.success("Transaction added");
+      onClose();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.Transaction.update(transaction.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
+      toast.success("Transaction updated");
       onClose();
     },
   });
@@ -47,7 +62,6 @@ export default function TransactionFormModal({ projectId, lineItems, revenueStre
     e.preventDefault();
     if (!validate()) return;
     const data = {
-      project_id: projectId,
       transaction_type: form.transaction_type,
       amount: Number(form.amount),
       date: form.date,
@@ -57,7 +71,11 @@ export default function TransactionFormModal({ projectId, lineItems, revenueStre
     if (form.line_item_id) data.line_item_id = form.line_item_id;
     if (form.revenue_stream_id) data.revenue_stream_id = form.revenue_stream_id;
     if (form.funding_source_id) data.funding_source_id = form.funding_source_id;
-    createMutation.mutate(data);
+    if (transaction) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate({ ...data, project_id: projectId });
+    }
   };
 
   const updateField = (field, value) => {
@@ -72,7 +90,7 @@ export default function TransactionFormModal({ projectId, lineItems, revenueStre
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogTitle>{transaction ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -177,9 +195,9 @@ export default function TransactionFormModal({ projectId, lineItems, revenueStre
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Transaction
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {transaction ? "Update Transaction" : "Add Transaction"}
             </Button>
           </div>
         </form>

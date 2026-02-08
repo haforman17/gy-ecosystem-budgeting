@@ -19,11 +19,20 @@ const creditTypes = [
   { value: "NFM", label: "Natural Flood Management" },
 ];
 
-export default function RevenueFormModal({ projectId, onClose }) {
+export default function RevenueFormModal({ projectId, item, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
-    credit_type: "", description: "", estimated_volume: "", price_per_unit: "",
-    generation_start_date: "", vintage: "", notes: "",
+    credit_type: item?.credit_type || "",
+    description: item?.description || "",
+    estimated_volume: item?.estimated_volume || "",
+    verified_volume: item?.verified_volume || "",
+    sold_volume: item?.sold_volume || "",
+    price_per_unit: item?.price_per_unit || "",
+    actual_revenue: item?.actual_revenue || "",
+    generation_start_date: item?.generation_start_date || "",
+    verification_status: item?.verification_status || "PENDING",
+    vintage: item?.vintage || "",
+    notes: item?.notes || "",
   });
   const [errors, setErrors] = useState({});
 
@@ -32,6 +41,15 @@ export default function RevenueFormModal({ projectId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
       toast.success("Revenue stream added");
+      onClose();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.RevenueStream.update(item.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
+      toast.success("Revenue stream updated");
       onClose();
     },
   });
@@ -52,17 +70,20 @@ export default function RevenueFormModal({ projectId, onClose }) {
     if (!validate()) return;
     const vol = Number(form.estimated_volume);
     const price = Number(form.price_per_unit);
-    createMutation.mutate({
+    const data = {
       ...form,
-      project_id: projectId,
       estimated_volume: vol,
+      verified_volume: Number(form.verified_volume) || 0,
+      sold_volume: Number(form.sold_volume) || 0,
       price_per_unit: price,
       estimated_revenue: vol * price,
-      verified_volume: 0,
-      sold_volume: 0,
-      actual_revenue: 0,
-      verification_status: "PENDING",
-    });
+      actual_revenue: Number(form.actual_revenue) || 0,
+    };
+    if (item) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate({ ...data, project_id: projectId, verification_status: "PENDING" });
+    }
   };
 
   const updateField = (field, value) => {
@@ -74,9 +95,9 @@ export default function RevenueFormModal({ projectId, onClose }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Revenue Stream</DialogTitle>
+          <DialogTitle>{item ? "Edit Revenue Stream" : "Add Revenue Stream"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -116,6 +137,25 @@ export default function RevenueFormModal({ projectId, onClose }) {
               {errors.estimated_volume && <p className="text-xs text-red-500">{errors.estimated_volume}</p>}
             </div>
             <div className="space-y-1.5">
+              <Label className="text-sm">Verified Volume</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.verified_volume}
+                onChange={(e) => updateField("verified_volume", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Sold Volume</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.sold_volume}
+                onChange={(e) => updateField("sold_volume", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label className="text-sm">Price Per Unit (£) *</Label>
               <Input
                 type="number" step="0.01" min="0"
@@ -127,6 +167,15 @@ export default function RevenueFormModal({ projectId, onClose }) {
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label className="text-sm">Actual Revenue (£)</Label>
+            <Input
+              type="number" step="0.01" min="0"
+              value={form.actual_revenue}
+              onChange={(e) => updateField("actual_revenue", e.target.value)}
+            />
+          </div>
+
           {estimatedRevenue > 0 && (
             <div className="bg-emerald-50 rounded-lg p-3 text-center">
               <p className="text-xs text-emerald-600 font-medium">Estimated Revenue</p>
@@ -136,13 +185,17 @@ export default function RevenueFormModal({ projectId, onClose }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-sm">Generation Start *</Label>
-              <Input
-                type="date" value={form.generation_start_date}
-                onChange={(e) => updateField("generation_start_date", e.target.value)}
-                className={errors.generation_start_date ? "border-red-300" : ""}
-              />
-              {errors.generation_start_date && <p className="text-xs text-red-500">{errors.generation_start_date}</p>}
+              <Label className="text-sm">Verification Status</Label>
+              <Select value={form.verification_status} onValueChange={(v) => updateField("verification_status", v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="VERIFIED">Verified</SelectItem>
+                  <SelectItem value="SOLD">Sold</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Vintage</Label>
@@ -155,15 +208,25 @@ export default function RevenueFormModal({ projectId, onClose }) {
           </div>
 
           <div className="space-y-1.5">
+            <Label className="text-sm">Generation Start *</Label>
+            <Input
+              type="date" value={form.generation_start_date}
+              onChange={(e) => updateField("generation_start_date", e.target.value)}
+              className={errors.generation_start_date ? "border-red-300" : ""}
+            />
+            {errors.generation_start_date && <p className="text-xs text-red-500">{errors.generation_start_date}</p>}
+          </div>
+
+          <div className="space-y-1.5">
             <Label className="text-sm">Notes</Label>
             <Textarea value={form.notes} onChange={(e) => updateField("notes", e.target.value)} rows={2} />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Revenue Stream
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {item ? "Update Revenue Stream" : "Add Revenue Stream"}
             </Button>
           </div>
         </form>

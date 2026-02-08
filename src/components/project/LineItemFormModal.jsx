@@ -22,10 +22,15 @@ const categoryLabels = {
   OVERHEAD: "Overhead", OTHER: "Other",
 };
 
-export default function LineItemFormModal({ projectId, onClose }) {
+export default function LineItemFormModal({ projectId, item, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
-    category: "", description: "", budget_amount: "", date: "", notes: "",
+    category: item?.category || "",
+    description: item?.description || "",
+    budget_amount: item?.budget_amount || "",
+    actual_amount: item?.actual_amount || "",
+    date: item?.date || "",
+    notes: item?.notes || "",
   });
   const [errors, setErrors] = useState({});
 
@@ -34,6 +39,15 @@ export default function LineItemFormModal({ projectId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
       toast.success("Line item added");
+      onClose();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.LineItem.update(item.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
+      toast.success("Line item updated");
       onClose();
     },
   });
@@ -51,12 +65,16 @@ export default function LineItemFormModal({ projectId, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    createMutation.mutate({
+    const data = {
       ...form,
-      project_id: projectId,
       budget_amount: Number(form.budget_amount),
-      actual_amount: 0,
-    });
+      actual_amount: Number(form.actual_amount) || 0,
+    };
+    if (item) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate({ ...data, project_id: projectId });
+    }
   };
 
   const updateField = (field, value) => {
@@ -68,7 +86,7 @@ export default function LineItemFormModal({ projectId, onClose }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Line Item</DialogTitle>
+          <DialogTitle>{item ? "Edit Line Item" : "Add Line Item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -108,14 +126,23 @@ export default function LineItemFormModal({ projectId, onClose }) {
               {errors.budget_amount && <p className="text-xs text-red-500">{errors.budget_amount}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Date *</Label>
+              <Label className="text-sm">Actual Amount (£)</Label>
               <Input
-                type="date" value={form.date}
-                onChange={(e) => updateField("date", e.target.value)}
-                className={errors.date ? "border-red-300" : ""}
+                type="number" step="0.01" min="0"
+                value={form.actual_amount}
+                onChange={(e) => updateField("actual_amount", e.target.value)}
               />
-              {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm">Date *</Label>
+            <Input
+              type="date" value={form.date}
+              onChange={(e) => updateField("date", e.target.value)}
+              className={errors.date ? "border-red-300" : ""}
+            />
+            {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -125,9 +152,9 @@ export default function LineItemFormModal({ projectId, onClose }) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Line Item
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {item ? "Update Line Item" : "Add Line Item"}
             </Button>
           </div>
         </form>
