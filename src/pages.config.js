@@ -58,6 +58,7 @@ import Reports from './pages/Reports';
 import ReportGenerate from './pages/ReportGenerate';
 import Compliance from './pages/Compliance';
 import AuditLog from './pages/AuditLog';
+import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +74,7 @@ export const PAGES = {
     "ReportGenerate": ReportGenerate,
     "Compliance": Compliance,
     "AuditLog": AuditLog,
+    "Home": Home,
 }
 
 export const pagesConfig = {
