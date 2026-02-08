@@ -10,7 +10,7 @@ import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import { Plus, Trash2, Droplets, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 import RevenueFormModal from "./RevenueFormModal";
 import TransactionsModal from "./TransactionsModal";
 import { toast } from "sonner";
@@ -71,16 +71,39 @@ export default function RevenueTab({ projectId, revenueStreams }) {
     },
   });
 
-  // Chart data by credit type
+  // Chart data by credit type - Estimated Revenue
   const typeData = {};
   revenueStreams.forEach((rs) => {
     const t = rs.credit_type || "OTHER";
-    typeData[t] = (typeData[t] || 0) + ((rs.estimated_volume || 0) * (rs.price_per_unit || 0));
+    typeData[t] = (typeData[t] || 0) + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0));
   });
-  const chartData = Object.entries(typeData).map(([name, value]) => ({
+  const estimatedChartData = Object.entries(typeData).map(([name, value]) => ({
     name: getLabel(name),
     value,
   }));
+
+  // Chart data - Estimated vs Real Revenue by type
+  const comparisonData = {};
+  revenueStreams.forEach((rs) => {
+    const t = rs.credit_type || "OTHER";
+    if (!comparisonData[t]) {
+      comparisonData[t] = { estimated: 0, real: 0 };
+    }
+    comparisonData[t].estimated += (rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0);
+    comparisonData[t].real += revenueCalcs[rs.id]?.realRevenue || 0;
+  });
+  const comparisonChartData = Object.entries(comparisonData).map(([name, values]) => ({
+    name: getLabel(name),
+    Estimated: values.estimated,
+    Real: values.real,
+  }));
+
+  // Total revenue comparison
+  const totalEstimated = revenueStreams.reduce(
+    (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0)),
+    0
+  );
+  const totalReal = Object.values(revenueCalcs).reduce((sum, calc) => sum + (calc.realRevenue || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -100,8 +123,32 @@ export default function RevenueTab({ projectId, revenueStreams }) {
           onAction={() => setShowForm(true)}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-0 shadow-sm lg:col-span-2">
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-500">Total Estimated Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-emerald-600">{formatCurrency(totalEstimated)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-500">Total Real Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-blue-600">{formatCurrency(totalReal)}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {totalEstimated > 0 ? `${((totalReal / totalEstimated) * 100).toFixed(1)}% of estimated` : "No estimate"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="border-0 shadow-sm lg:col-span-2">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
@@ -164,16 +211,16 @@ export default function RevenueTab({ projectId, revenueStreams }) {
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600">Revenue by Credit Type</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-600">Estimated Revenue</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={chartData}>
+                <BarChart data={estimatedChartData}>
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {chartData.map((_, i) => (
+                    {estimatedChartData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Bar>
@@ -182,6 +229,57 @@ export default function RevenueTab({ projectId, revenueStreams }) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Comparison Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600">Estimated vs Real Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={comparisonChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Legend />
+                  <Bar dataKey="Estimated" fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Real" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600">Revenue Achievement Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart 
+                  data={comparisonChartData.map(d => ({
+                    name: d.name,
+                    rate: d.Estimated > 0 ? ((d.Real / d.Estimated) * 100) : 0
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                  <Tooltip formatter={(v) => `${v.toFixed(1)}%`} />
+                  <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
+                    {comparisonChartData.map((entry, i) => {
+                      const rate = entry.Estimated > 0 ? (entry.Real / entry.Estimated) * 100 : 0;
+                      const color = rate >= 100 ? "#10b981" : rate >= 75 ? "#f59e0b" : "#ef4444";
+                      return <Cell key={i} fill={color} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+        </>
       )}
 
       {showForm && <RevenueFormModal projectId={projectId} onClose={() => setShowForm(false)} />}
