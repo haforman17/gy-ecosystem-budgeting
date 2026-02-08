@@ -20,6 +20,11 @@ const navItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = React.useState(null);
+
+  React.useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => setUser(null));
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50/80">
@@ -63,8 +68,11 @@ export default function Layout({ children, currentPageName }) {
           {/* Nav */}
           <nav className="flex-1 px-3 py-4 space-y-1">
             {navItems.map((item) => {
+              if (item.adminOnly && user?.role !== "admin") return null;
+              
               const isActive = currentPageName === item.page || 
-                (item.page === "Projects" && currentPageName?.startsWith("Project"));
+                (item.page === "Projects" && currentPageName?.startsWith("Project")) ||
+                (item.page === "Reports" && currentPageName?.startsWith("Report"));
               return (
                 <Link
                   key={item.page}
