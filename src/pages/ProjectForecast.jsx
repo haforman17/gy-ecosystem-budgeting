@@ -6,15 +6,28 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Download, Plus } from "lucide-react";
+import { TrendingUp, Download, Plus, Settings, Trash2 } from "lucide-react";
 import LoadingState from "@/components/shared/LoadingState";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
+import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
+import ForecastChart from "@/components/forecast/ForecastChart";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import { generateForecastPeriods, calculateFinancialMetrics } from "@/components/lib/forecastCalculations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function ProjectForecast() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
   const [years] = useState(30);
+  const [showScenarioForm, setShowScenarioForm] = useState(false);
+  const [editingScenario, setEditingScenario] = useState(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [scenarioToDelete, setScenarioToDelete] = useState(null);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -29,53 +42,92 @@ export default function ProjectForecast() {
     enabled: !!projectId,
   });
 
-  const [selectedScenario] = useState(scenarios[0]?.id || null);
-
-  const { data: forecastPeriods = [], isLoading: periodsLoading } = useQuery({
-    queryKey: ["forecastPeriods", selectedScenario],
-    queryFn: () => base44.entities.ForecastPeriod.filter({ scenario_id: selectedScenario }),
-    enabled: !!selectedScenario,
+  const { data: revenueStreams = [], isLoading: revenueLoading } = useQuery({
+    queryKey: ["revenueStreams", projectId],
+    queryFn: () => base44.entities.RevenueStream.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
-  // Generate simple forecast data if no scenarios exist
+  const { data: lineItems = [], isLoading: lineItemsLoading } = useQuery({
+    queryKey: ["lineItems", projectId],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  React.useEffect(() => {
+    if (scenarios.length > 0 && !selectedScenarioId) {
+      setSelectedScenarioId(scenarios[0].id);
+    }
+  }, [scenarios, selectedScenarioId]);
+
+  const selectedScenario = scenarios.find((s) => s.id === selectedScenarioId);
+
+  const deleteScenarioMutation = useMutation({
+    mutationFn: (id) => base44.entities.ForecastScenario.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forecastScenarios"] });
+      toast.success("Scenario deleted");
+      setShowDeleteDialog(false);
+      setScenarioToDelete(null);
+      if (selectedScenarioId === scenarioToDelete) {
+        setSelectedScenarioId(null);
+      }
+    },
+  });
+
   const forecastData = React.useMemo(() => {
-    if (forecastPeriods.length > 0) return forecastPeriods;
+    if (!project || !revenueStreams || !lineItems) return [];
 
-    // Simple default forecast
-    const data = [];
-    const projectStartYear = project?.start_date ? new Date(project.start_date).getFullYear() : new Date().getFullYear();
-
-    for (let year = 1; year <= years; year++) {
-      const isEstablishment = year <= 3;
-      const revenue = isEstablishment ? 0 : 50000 * year * 0.8; // Simplified revenue growth
-      const expenses = isEstablishment ? 100000 : 20000; // High establishment costs, then maintenance
-
-      data.push({
-        year,
-        period_start: `${projectStartYear + year - 1}-01-01`,
-        period_end: `${projectStartYear + year - 1}-12-31`,
-        projected_revenue: revenue,
-        projected_expenses: expenses,
-        projected_cash_flow: revenue - expenses,
-        carbon_credits_generated: year > 5 ? 100 * year : 0,
-        bng_habitat_units_generated: year === 3 ? 500 : 0,
-      });
+    if (selectedScenario && selectedScenario.assumptions) {
+      return generateForecastPeriods(
+        revenueStreams,
+        lineItems,
+        selectedScenario.assumptions,
+        project.start_date,
+        years
+      );
     }
 
-    return data;
-  }, [forecastPeriods, project, years]);
+    // Default scenario if none selected
+    const defaultAssumptions = {
+      carbon_price: 25,
+      bng_habitat_price: 42000,
+      bng_hedgerow_price: 28000,
+      watercourse_price: 35000,
+      nfm_price: 15000,
+      price_escalation_rate: 0.03,
+      maintenance_cost_increase: 0.02,
+      establishment_success_rate: 0.95,
+      annual_mortality_rate: 0.01,
+      discount_rate: 0.05,
+    };
+
+    return generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
+  }, [project, revenueStreams, lineItems, selectedScenario, years]);
 
   const totals = React.useMemo(() => {
-    return {
-      revenue: forecastData.reduce((sum, p) => sum + (p.projected_revenue || 0), 0),
-      expenses: forecastData.reduce((sum, p) => sum + (p.projected_expenses || 0), 0),
-      cashFlow: forecastData.reduce((sum, p) => sum + (p.projected_cash_flow || 0), 0),
-      carbon: forecastData.reduce((sum, p) => sum + (p.carbon_credits_generated || 0), 0),
-      bng: forecastData.reduce((sum, p) => sum + (p.bng_habitat_units_generated || 0), 0),
-    };
-  }, [forecastData]);
+    const revenue = forecastData.reduce((sum, p) => sum + (p.projected_revenue || 0), 0);
+    const expenses = forecastData.reduce((sum, p) => sum + (p.projected_expenses || 0), 0);
+    const cashFlow = revenue - expenses;
+    const carbon = forecastData.reduce((sum, p) => sum + (p.carbon_credits_generated || 0), 0);
+    const bng = forecastData.reduce((sum, p) => sum + (p.bng_habitat_units_generated || 0), 0);
 
-  if (projectLoading || scenariosLoading || periodsLoading) {
+    const metrics = calculateFinancialMetrics(
+      forecastData,
+      selectedScenario?.assumptions?.discount_rate || 0.05
+    );
+
+    return {
+      revenue,
+      expenses,
+      cashFlow,
+      carbon,
+      bng,
+      ...metrics,
+    };
+  }, [forecastData, selectedScenario]);
+
+  if (projectLoading || scenariosLoading || revenueLoading || lineItemsLoading) {
     return <LoadingState />;
   }
 
@@ -96,18 +148,87 @@ export default function ProjectForecast() {
           <p className="text-sm text-slate-500 mt-1">30-Year Financial Forecast</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          {scenarios.length > 0 && (
+            <Select value={selectedScenarioId || ""} onValueChange={setSelectedScenarioId}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select scenario" />
+              </SelectTrigger>
+              <SelectContent>
+                {scenarios.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.scenario_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {selectedScenario && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditingScenario(selectedScenario);
+                  setShowScenarioForm(true);
+                }}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500"
+                onClick={() => {
+                  setScenarioToDelete(selectedScenario.id);
+                  setShowDeleteDialog(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          )}
+          <Button
+            variant="default"
             size="sm"
-            onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}
+            onClick={() => {
+              setEditingScenario(null);
+              setShowScenarioForm(true);
+            }}
           >
+            <Plus className="h-4 w-4 mr-2" />
+            New Scenario
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}>
             Back to Project
           </Button>
         </div>
       </div>
 
+      {selectedScenario && (
+        <Card className="bg-gradient-to-br from-slate-50 to-white border-slate-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{selectedScenario.scenario_name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600">{selectedScenario.description || "No description"}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-slate-500">Carbon:</span>{" "}
+                <span className="font-medium">£{selectedScenario.assumptions?.carbon_price}/tCO2e</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Escalation:</span>{" "}
+                <span className="font-medium">{((selectedScenario.assumptions?.price_escalation_rate || 0) * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Total Revenue (30yr)</CardTitle>
@@ -145,6 +266,22 @@ export default function ProjectForecast() {
             <p className="text-2xl font-bold text-slate-900">{totals.carbon.toLocaleString()} tCO2e</p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">NPV / IRR</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-bold text-slate-900">{formatCurrency(totals.npv)}</p>
+            {totals.irr && <p className="text-sm text-slate-500">{(totals.irr * 100).toFixed(1)}% IRR</p>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ForecastChart forecastData={forecastData} type="line" />
+        <ForecastChart forecastData={forecastData} type="bar" />
       </div>
 
       {/* Revenue Forecast Table */}
@@ -219,6 +356,22 @@ export default function ProjectForecast() {
           </div>
         </CardContent>
       </Card>
+
+      <ScenarioFormModal
+        open={showScenarioForm}
+        onOpenChange={setShowScenarioForm}
+        projectId={projectId}
+        scenario={editingScenario}
+      />
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Scenario"
+        description="Are you sure you want to delete this forecast scenario? This cannot be undone."
+        onConfirm={() => deleteScenarioMutation.mutate(scenarioToDelete)}
+        destructive
+      />
     </div>
   );
 }
