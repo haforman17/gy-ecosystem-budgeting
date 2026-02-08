@@ -24,14 +24,15 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
   const [form, setForm] = useState({
     credit_type: item?.credit_type || "",
     description: item?.description || "",
+    vintage: item?.vintage || "",
     estimated_volume: item?.estimated_volume || "",
-    verified_volume: item?.verified_volume || "",
-    sold_volume: item?.sold_volume || "",
-    price_per_unit: item?.price_per_unit || "",
+    estimated_price_per_unit: item?.estimated_price_per_unit || item?.price_per_unit || "",
+    actual_volume: item?.actual_volume || "",
+    actual_price_per_unit: item?.actual_price_per_unit || "",
     actual_revenue: item?.actual_revenue || "",
+    date_of_sale: item?.date_of_sale || "",
     generation_start_date: item?.generation_start_date || "",
     verification_status: item?.verification_status || "PENDING",
-    vintage: item?.vintage || "",
     notes: item?.notes || "",
   });
   const [errors, setErrors] = useState({});
@@ -59,7 +60,7 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
     if (!form.credit_type) errs.credit_type = "Required";
     if (!form.description.trim()) errs.description = "Required";
     if (!form.estimated_volume || Number(form.estimated_volume) <= 0) errs.estimated_volume = "Must be > 0";
-    if (!form.price_per_unit || Number(form.price_per_unit) <= 0) errs.price_per_unit = "Must be > 0";
+    if (!form.estimated_price_per_unit || Number(form.estimated_price_per_unit) <= 0) errs.estimated_price_per_unit = "Must be > 0";
     if (!form.generation_start_date) errs.generation_start_date = "Required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -68,21 +69,30 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    const vol = Number(form.estimated_volume);
-    const price = Number(form.price_per_unit);
+    const estVol = Number(form.estimated_volume);
+    const estPrice = Number(form.estimated_price_per_unit);
+    const actVol = Number(form.actual_volume) || 0;
+    const actPrice = Number(form.actual_price_per_unit) || 0;
     const data = {
-      ...form,
-      estimated_volume: vol,
-      verified_volume: Number(form.verified_volume) || 0,
-      sold_volume: Number(form.sold_volume) || 0,
-      price_per_unit: price,
-      estimated_revenue: vol * price,
-      actual_revenue: Number(form.actual_revenue) || 0,
+      credit_type: form.credit_type,
+      description: form.description,
+      vintage: form.vintage || undefined,
+      estimated_volume: estVol,
+      estimated_price_per_unit: estPrice,
+      estimated_revenue: estVol * estPrice,
+      actual_volume: actVol,
+      actual_price_per_unit: actPrice,
+      actual_revenue: actVol * actPrice,
+      date_of_sale: form.date_of_sale || undefined,
+      generation_start_date: form.generation_start_date,
+      verification_status: form.verification_status,
+      notes: form.notes || undefined,
+      price_per_unit: estPrice,
     };
     if (item) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate({ ...data, project_id: projectId, verification_status: "PENDING" });
+      createMutation.mutate({ ...data, project_id: projectId });
     }
   };
 
@@ -91,7 +101,8 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const estimatedRevenue = (Number(form.estimated_volume) || 0) * (Number(form.price_per_unit) || 0);
+  const estimatedRevenue = (Number(form.estimated_volume) || 0) * (Number(form.estimated_price_per_unit) || 0);
+  const actualRevenue = (Number(form.actual_volume) || 0) * (Number(form.actual_price_per_unit) || 0);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -101,7 +112,7 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-sm">Credit Type *</Label>
+            <Label className="text-sm">Ecosystem Services *</Label>
             <Select value={form.credit_type} onValueChange={(v) => updateField("credit_type", v)}>
               <SelectTrigger className={errors.credit_type ? "border-red-300" : ""}>
                 <SelectValue placeholder="Select type" />
@@ -125,9 +136,18 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
+          <div className="space-y-1.5">
+            <Label className="text-sm">Vintage</Label>
+            <Input
+              value={form.vintage}
+              onChange={(e) => updateField("vintage", e.target.value)}
+              placeholder="e.g. 2025"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-sm">Estimated Volume *</Label>
+              <Label className="text-sm">Est. Volume *</Label>
               <Input
                 type="number" step="0.01" min="0"
                 value={form.estimated_volume}
@@ -137,55 +157,53 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
               {errors.estimated_volume && <p className="text-xs text-red-500">{errors.estimated_volume}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Verified Volume</Label>
+              <Label className="text-sm">Est. Price/Unit (£) *</Label>
               <Input
                 type="number" step="0.01" min="0"
-                value={form.verified_volume}
-                onChange={(e) => updateField("verified_volume", e.target.value)}
+                value={form.estimated_price_per_unit}
+                onChange={(e) => updateField("estimated_price_per_unit", e.target.value)}
+                className={errors.estimated_price_per_unit ? "border-red-300" : ""}
               />
+              {errors.estimated_price_per_unit && <p className="text-xs text-red-500">{errors.estimated_price_per_unit}</p>}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-sm">Sold Volume</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={form.sold_volume}
-                onChange={(e) => updateField("sold_volume", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Price Per Unit (£) *</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={form.price_per_unit}
-                onChange={(e) => updateField("price_per_unit", e.target.value)}
-                className={errors.price_per_unit ? "border-red-300" : ""}
-              />
-              {errors.price_per_unit && <p className="text-xs text-red-500">{errors.price_per_unit}</p>}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-sm">Actual Revenue (£)</Label>
-            <Input
-              type="number" step="0.01" min="0"
-              value={form.actual_revenue}
-              onChange={(e) => updateField("actual_revenue", e.target.value)}
-            />
           </div>
 
           {estimatedRevenue > 0 && (
             <div className="bg-emerald-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-emerald-600 font-medium">Estimated Revenue</p>
+              <p className="text-xs text-emerald-600 font-medium">Est. Revenue</p>
               <p className="text-lg font-bold text-emerald-700">{formatCurrency(estimatedRevenue)}</p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-sm">Verification Status</Label>
+              <Label className="text-sm">Real Volume</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.actual_volume}
+                onChange={(e) => updateField("actual_volume", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Real Price/Unit (£)</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={form.actual_price_per_unit}
+                onChange={(e) => updateField("actual_price_per_unit", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {actualRevenue > 0 && (
+            <div className="bg-blue-50 rounded-lg p-3 text-center">
+              <p className="text-xs text-blue-600 font-medium">Real Revenue</p>
+              <p className="text-lg font-bold text-blue-700">{formatCurrency(actualRevenue)}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Status</Label>
               <Select value={form.verification_status} onValueChange={(v) => updateField("verification_status", v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -198,11 +216,11 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Vintage</Label>
+              <Label className="text-sm">Date of Sale</Label>
               <Input
-                value={form.vintage}
-                onChange={(e) => updateField("vintage", e.target.value)}
-                placeholder="e.g. 2025"
+                type="date"
+                value={form.date_of_sale}
+                onChange={(e) => updateField("date_of_sale", e.target.value)}
               />
             </div>
           </div>
