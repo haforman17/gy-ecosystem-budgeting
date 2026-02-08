@@ -27,10 +27,6 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
     vintage: item?.vintage || "",
     estimated_volume: item?.estimated_volume || "",
     estimated_price_per_unit: item?.estimated_price_per_unit || item?.price_per_unit || "",
-    actual_volume: item?.actual_volume || "",
-    actual_price_per_unit: item?.actual_price_per_unit || "",
-    actual_revenue: item?.actual_revenue || "",
-    date_of_sale: item?.date_of_sale || "",
     generation_start_date: item?.generation_start_date || "",
     verification_status: item?.verification_status || "PENDING",
     notes: item?.notes || "",
@@ -71,8 +67,6 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
     if (!validate()) return;
     const estVol = Number(form.estimated_volume);
     const estPrice = Number(form.estimated_price_per_unit);
-    const actVol = Number(form.actual_volume) || 0;
-    const actPrice = Number(form.actual_price_per_unit) || 0;
     const data = {
       credit_type: form.credit_type,
       description: form.description,
@@ -80,10 +74,6 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
       estimated_volume: estVol,
       estimated_price_per_unit: estPrice,
       estimated_revenue: estVol * estPrice,
-      actual_volume: actVol,
-      actual_price_per_unit: actPrice,
-      actual_revenue: actVol * actPrice,
-      date_of_sale: form.date_of_sale || undefined,
       generation_start_date: form.generation_start_date,
       verification_status: form.verification_status,
       notes: form.notes || undefined,
@@ -102,7 +92,6 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
   };
 
   const estimatedRevenue = (Number(form.estimated_volume) || 0) * (Number(form.estimated_price_per_unit) || 0);
-  const actualRevenue = (Number(form.actual_volume) || 0) * (Number(form.actual_price_per_unit) || 0);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -163,32 +152,6 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
             <div className="bg-emerald-50 rounded-lg p-3 text-center">
               <p className="text-xs text-emerald-600 font-medium">Est. Revenue</p>
               <p className="text-lg font-bold text-emerald-700">{formatCurrency(estimatedRevenue)}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-sm">Real Volume</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={form.actual_volume}
-                onChange={(e) => updateField("actual_volume", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Real Avg Price/Unit (£)</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={form.actual_price_per_unit}
-                onChange={(e) => updateField("actual_price_per_unit", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {actualRevenue > 0 && (
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-blue-600 font-medium">Real Revenue</p>
-              <p className="text-lg font-bold text-blue-700">{formatCurrency(actualRevenue)}</p>
             </div>
           )}
 
