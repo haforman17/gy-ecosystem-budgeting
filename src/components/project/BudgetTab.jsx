@@ -12,6 +12,7 @@ import { Plus, Trash2, FileText, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import LineItemFormModal from "./LineItemFormModal";
+import TransactionsModal from "./TransactionsModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -21,6 +22,7 @@ export default function BudgetTab({ projectId, lineItems }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedLineItem, setSelectedLineItem] = useState(null);
   const queryClient = useQueryClient();
 
   // Fetch transactions to calculate actual expenses
@@ -123,7 +125,7 @@ export default function BudgetTab({ projectId, lineItems }) {
                       const actualAmount = lineItemActuals[li.id] || 0;
                       const variance = (li.budget_amount || 0) - actualAmount;
                       return (
-                        <TableRow key={li.id}>
+                        <TableRow key={li.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setSelectedLineItem(li)}>
                           <TableCell className="text-xs font-medium text-slate-600">{getLabel(li.category)}</TableCell>
                           <TableCell className="text-sm text-slate-700">{li.description}</TableCell>
                           <TableCell className="text-right text-sm font-medium">{formatCurrency(li.budget_amount)}</TableCell>
@@ -134,7 +136,7 @@ export default function BudgetTab({ projectId, lineItems }) {
                           <TableCell className="text-xs text-slate-400">
                             {li.date || "—"}
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -246,6 +248,17 @@ export default function BudgetTab({ projectId, lineItems }) {
         onConfirm={() => deleteMutation.mutate(deleteId)}
         destructive
       />
+
+      {selectedLineItem && (
+        <TransactionsModal
+          open={!!selectedLineItem}
+          onClose={() => setSelectedLineItem(null)}
+          title={`${getLabel(selectedLineItem.category)} - ${selectedLineItem.description}`}
+          transactions={transactions.filter(
+            (tx) => tx.transaction_type === "EXPENSE" && tx.line_item_id === selectedLineItem.id
+          )}
+        />
+      )}
     </div>
   );
 }
