@@ -1,0 +1,156 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { formatCurrency } from "../shared/CurrencyFormat";
+import { getLabel } from "../shared/StatusBadge";
+import EmptyState from "../shared/EmptyState";
+import ConfirmDialog from "../shared/ConfirmDialog";
+import { Plus, Trash2, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import LineItemFormModal from "./LineItemFormModal";
+import { toast } from "sonner";
+
+const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#d97706", "#4f46e5", "#16a34a", "#64748b", "#dc2626", "#8b5cf6"];
+
+export default function BudgetTab({ projectId, lineItems }) {
+  const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.LineItem.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
+      toast.success("Line item deleted");
+      setDeleteId(null);
+    },
+  });
+
+  const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+  const totalActual = lineItems.reduce((sum, li) => sum + (li.actual_amount || 0), 0);
+
+  // Chart data grouped by category
+  const categoryData = {};
+  lineItems.forEach((li) => {
+    const cat = li.category || "OTHER";
+    categoryData[cat] = (categoryData[cat] || 0) + (li.budget_amount || 0);
+  });
+  const chartData = Object.entries(categoryData).map(([name, value]) => ({
+    name: getLabel(name),
+    value,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-800">Budget Line Items</h2>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Add Line Item
+        </Button>
+      </div>
+
+      {lineItems.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No line items"
+          description="Add budget line items to track your project costs."
+          actionLabel="Add Line Item"
+          onAction={() => setShowForm(true)}
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="border-0 shadow-sm lg:col-span-2">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/60">
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Category</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Description</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Budget</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Actual</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Variance</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Date</TableHead>
+                        <TableHead className="w-10" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lineItems.map((li) => {
+                        const variance = (li.budget_amount || 0) - (li.actual_amount || 0);
+                        return (
+                          <TableRow key={li.id}>
+                            <TableCell className="text-xs font-medium text-slate-600">{getLabel(li.category)}</TableCell>
+                            <TableCell className="text-sm text-slate-700">{li.description}</TableCell>
+                            <TableCell className="text-right text-sm font-medium">{formatCurrency(li.budget_amount)}</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(li.actual_amount)}</TableCell>
+                            <TableCell className={`text-right text-sm font-medium ${variance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                              {formatCurrency(variance)}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-400">
+                              {li.date ? format(new Date(li.date), "dd MMM yy") : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(li.id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      <TableRow className="bg-slate-50/60 font-semibold">
+                        <TableCell colSpan={2} className="text-sm text-slate-700">Total</TableCell>
+                        <TableCell className="text-right text-sm">{formatCurrency(totalBudget)}</TableCell>
+                        <TableCell className="text-right text-sm">{formatCurrency(totalActual)}</TableCell>
+                        <TableCell className={`text-right text-sm ${totalBudget - totalActual >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                          {formatCurrency(totalBudget - totalActual)}
+                        </TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-600">Budget by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      {chartData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {showForm && (
+        <LineItemFormModal projectId={projectId} onClose={() => setShowForm(false)} />
+      )}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Delete Line Item"
+        description="Are you sure? This action cannot be undone."
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        destructive
+      />
+    </div>
+  );
+}
