@@ -114,7 +114,7 @@ export default function BudgetTab({ projectId, lineItems }) {
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Budget</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Actual</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Variance</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Date</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Year</TableHead>
                       <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
@@ -132,7 +132,7 @@ export default function BudgetTab({ projectId, lineItems }) {
                             {formatCurrency(variance)}
                           </TableCell>
                           <TableCell className="text-xs text-slate-400">
-                            {li.date ? format(new Date(li.date), "dd MMM yy") : "—"}
+                            {li.date || "—"}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
