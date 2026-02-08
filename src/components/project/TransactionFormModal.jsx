@@ -41,7 +41,16 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   const vintageYears = Array.from({ length: 20 }, (_, i) => currentYear - 5 + i);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Transaction.create(data);
+      await base44.entities.AuditLog.create({
+        action: "Created Transaction",
+        entity_type: "Transaction",
+        entity_id: result.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
       toast.success("Transaction added");
@@ -50,7 +59,16 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.update(transaction.id, data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Transaction.update(transaction.id, data);
+      await base44.entities.AuditLog.create({
+        action: "Updated Transaction",
+        entity_type: "Transaction",
+        entity_id: transaction.id,
+        project_id: projectId,
+      });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
       toast.success("Transaction updated");
