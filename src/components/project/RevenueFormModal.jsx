@@ -28,7 +28,7 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
     estimated_volume: item?.estimated_volume || "",
     estimated_price_per_unit: item?.estimated_price_per_unit || item?.price_per_unit || "",
     generation_start_date: item?.generation_start_date || "",
-    verification_status: item?.verification_status || "PENDING",
+    verification_status: item?.verification_status || "ESTIMATED",
     notes: item?.notes || "",
   });
   const [errors, setErrors] = useState({});
@@ -163,9 +163,9 @@ export default function RevenueFormModal({ projectId, item, onClose }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="VERIFIED">Verified</SelectItem>
-                  <SelectItem value="SOLD">Sold</SelectItem>
+                  <SelectItem value="AVAILABLE">Available</SelectItem>
+                  <SelectItem value="ESTIMATED">Estimated</SelectItem>
+                  <SelectItem value="SOLD_OUT">Sold Out</SelectItem>
                 </SelectContent>
               </Select>
             </div>
