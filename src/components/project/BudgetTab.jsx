@@ -10,7 +10,7 @@ import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import { Plus, Trash2, FileText, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import LineItemFormModal from "./LineItemFormModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -36,14 +36,28 @@ export default function BudgetTab({ projectId, lineItems }) {
   const totalActual = lineItems.reduce((sum, li) => sum + (li.actual_amount || 0), 0);
 
   // Chart data grouped by category
-  const categoryData = {};
+  const categoryBudgetData = {};
+  const categoryActualData = {};
   lineItems.forEach((li) => {
     const cat = li.category || "OTHER";
-    categoryData[cat] = (categoryData[cat] || 0) + (li.budget_amount || 0);
+    categoryBudgetData[cat] = (categoryBudgetData[cat] || 0) + (li.budget_amount || 0);
+    categoryActualData[cat] = (categoryActualData[cat] || 0) + (li.actual_amount || 0);
   });
-  const chartData = Object.entries(categoryData).map(([name, value]) => ({
+  
+  const budgetChartData = Object.entries(categoryBudgetData).map(([name, value]) => ({
     name: getLabel(name),
     value,
+  }));
+  
+  const actualChartData = Object.entries(categoryActualData).map(([name, value]) => ({
+    name: getLabel(name),
+    value,
+  }));
+  
+  const comparisonChartData = Object.keys(categoryBudgetData).map((cat) => ({
+    name: getLabel(cat),
+    Budget: categoryBudgetData[cat] || 0,
+    Actual: categoryActualData[cat] || 0,
   }));
 
   return (
@@ -65,72 +79,72 @@ export default function BudgetTab({ projectId, lineItems }) {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="border-0 shadow-sm lg:col-span-2">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50/60">
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Category</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Description</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Budget</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Actual</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Variance</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-500 uppercase">Date</TableHead>
-                        <TableHead className="w-10" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lineItems.map((li) => {
-                        const variance = (li.budget_amount || 0) - (li.actual_amount || 0);
-                        return (
-                          <TableRow key={li.id}>
-                            <TableCell className="text-xs font-medium text-slate-600">{getLabel(li.category)}</TableCell>
-                            <TableCell className="text-sm text-slate-700">{li.description}</TableCell>
-                            <TableCell className="text-right text-sm font-medium">{formatCurrency(li.budget_amount)}</TableCell>
-                            <TableCell className="text-right text-sm">{formatCurrency(li.actual_amount)}</TableCell>
-                            <TableCell className={`text-right text-sm font-medium ${variance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                              {formatCurrency(variance)}
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-400">
-                              {li.date ? format(new Date(li.date), "dd MMM yy") : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setEditItem(li)}>
-                                    <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setDeleteId(li.id)} className="text-red-600">
-                                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      <TableRow className="bg-slate-50/60 font-semibold">
-                        <TableCell colSpan={2} className="text-sm text-slate-700">Total</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(totalBudget)}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(totalActual)}</TableCell>
-                        <TableCell className={`text-right text-sm ${totalBudget - totalActual >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                          {formatCurrency(totalBudget - totalActual)}
-                        </TableCell>
-                        <TableCell colSpan={2} />
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/60">
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Category</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Description</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Budget</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Actual</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Variance</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Date</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lineItems.map((li) => {
+                      const variance = (li.budget_amount || 0) - (li.actual_amount || 0);
+                      return (
+                        <TableRow key={li.id}>
+                          <TableCell className="text-xs font-medium text-slate-600">{getLabel(li.category)}</TableCell>
+                          <TableCell className="text-sm text-slate-700">{li.description}</TableCell>
+                          <TableCell className="text-right text-sm font-medium">{formatCurrency(li.budget_amount)}</TableCell>
+                          <TableCell className="text-right text-sm">{formatCurrency(li.actual_amount)}</TableCell>
+                          <TableCell className={`text-right text-sm font-medium ${variance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                            {formatCurrency(variance)}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-400">
+                            {li.date ? format(new Date(li.date), "dd MMM yy") : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreVertical className="h-3.5 w-3.5 text-slate-400" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setEditItem(li)}>
+                                  <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDeleteId(li.id)} className="text-red-600">
+                                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    <TableRow className="bg-slate-50/60 font-semibold">
+                      <TableCell colSpan={2} className="text-sm text-slate-700">Total</TableCell>
+                      <TableCell className="text-right text-sm">{formatCurrency(totalBudget)}</TableCell>
+                      <TableCell className="text-right text-sm">{formatCurrency(totalActual)}</TableCell>
+                      <TableCell className={`text-right text-sm ${totalBudget - totalActual >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {formatCurrency(totalBudget - totalActual)}
+                      </TableCell>
+                      <TableCell colSpan={2} />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
 
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600">Budget by Category</CardTitle>
@@ -138,14 +152,52 @@ export default function BudgetTab({ projectId, lineItems }) {
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
-                    <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
-                      {chartData.map((_, i) => (
+                    <Pie data={budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      {budgetChartData.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(v) => formatCurrency(v)} />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
                   </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-600">Actual Spend by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={actualChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      {actualChartData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-600">Budget vs Actual</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={comparisonChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                    <Bar dataKey="Budget" fill="#059669" />
+                    <Bar dataKey="Actual" fill="#0891b2" />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
