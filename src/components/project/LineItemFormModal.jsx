@@ -28,8 +28,7 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
     category: item?.category || "",
     description: item?.description || "",
     budget_amount: item?.budget_amount || "",
-    actual_amount: item?.actual_amount || "",
-    date: item?.date || "",
+    date: item?.date || new Date().getFullYear().toString(),
     notes: item?.notes || "",
   });
   const [errors, setErrors] = useState({});
@@ -68,7 +67,6 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
     const data = {
       ...form,
       budget_amount: Number(form.budget_amount),
-      actual_amount: Number(form.actual_amount) || 0,
     };
     if (item) {
       updateMutation.mutate(data);
@@ -126,23 +124,19 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
               {errors.budget_amount && <p className="text-xs text-red-500">{errors.budget_amount}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Actual Amount (£)</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={form.actual_amount}
-                onChange={(e) => updateField("actual_amount", e.target.value)}
-              />
+              <Label className="text-sm">Year *</Label>
+              <Select value={form.date} onValueChange={(v) => updateField("date", v)}>
+                <SelectTrigger className={errors.date ? "border-red-300" : ""}>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-sm">Date *</Label>
-            <Input
-              type="date" value={form.date}
-              onChange={(e) => updateField("date", e.target.value)}
-              className={errors.date ? "border-red-300" : ""}
-            />
-            {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
           </div>
 
           <div className="space-y-1.5">
