@@ -9,8 +9,9 @@ import { formatCurrency } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, Receipt, Download, MoreVertical, Pencil } from "lucide-react";
+import { Plus, Trash2, Receipt, Download, MoreVertical, Pencil, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 import TransactionFormModal from "./TransactionFormModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -78,6 +79,23 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
     URL.revokeObjectURL(url);
   };
 
+  const exportXLSX = () => {
+    const headers = ["Date", "Type", "Description", "Amount", "Related To", "Funding Source", "Reference"];
+    const rows = filtered.map((tx) => [
+      tx.date ? format(new Date(tx.date), "yyyy-MM-dd") : "",
+      getLabel(tx.transaction_type),
+      tx.description,
+      tx.amount,
+      getRelatedName(tx),
+      getFundingName(tx),
+      tx.reference || "",
+    ]);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    XLSX.writeFile(workbook, `transactions-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
   const txTypeColors = {
     EXPENSE: "text-red-600",
     REVENUE: "text-emerald-600",
@@ -102,9 +120,21 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
               <SelectItem value="DEBT_REPAYMENT">Repayments</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={exportCSV} disabled={filtered.length === 0}>
-            <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={filtered.length === 0}>
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportCSV}>
+                <FileSpreadsheet className="h-3.5 w-3.5 mr-2" /> Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportXLSX}>
+                <FileSpreadsheet className="h-3.5 w-3.5 mr-2" /> Export as XLSX
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-1.5" /> Add Transaction
           </Button>
