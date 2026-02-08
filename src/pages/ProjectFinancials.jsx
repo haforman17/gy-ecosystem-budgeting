@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,37 +22,40 @@ import {
 import { startOfYear, endOfYear, subYears, startOfMonth, endOfMonth } from "date-fns";
 
 export default function ProjectFinancials() {
-  const { id } = useParams();
+  const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectId = urlParams.get("id");
   const [dateRange, setDateRange] = useState("current_year");
 
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ["project", id],
-    queryFn: () => base44.entities.Project.filter({ id }),
+    queryKey: ["project", projectId],
+    queryFn: () => base44.entities.Project.filter({ id: projectId }),
     select: (data) => data[0],
+    enabled: !!projectId,
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ["transactions", id],
-    queryFn: () => base44.entities.Transaction.filter({ project_id: id }),
-    enabled: !!id,
+    queryKey: ["transactions", projectId],
+    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   const { data: revenueStreams = [], isLoading: revenueLoading } = useQuery({
-    queryKey: ["revenueStreams", id],
-    queryFn: () => base44.entities.RevenueStream.filter({ project_id: id }),
-    enabled: !!id,
+    queryKey: ["revenueStreams", projectId],
+    queryFn: () => base44.entities.RevenueStream.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   const { data: lineItems = [], isLoading: lineItemsLoading } = useQuery({
-    queryKey: ["lineItems", id],
-    queryFn: () => base44.entities.LineItem.filter({ project_id: id }),
-    enabled: !!id,
+    queryKey: ["lineItems", projectId],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   const { data: fundingSources = [], isLoading: fundingLoading } = useQuery({
-    queryKey: ["fundingSources", id],
-    queryFn: () => base44.entities.FundingSource.filter({ project_id: id }),
-    enabled: !!id,
+    queryKey: ["fundingSources", projectId],
+    queryFn: () => base44.entities.FundingSource.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   const { startDate, endDate } = useMemo(() => {
@@ -125,7 +129,11 @@ export default function ProjectFinancials() {
   }
 
   if (!project) {
-    return <Navigate to="/projects" replace />;
+    return (
+      <div className="text-center py-20">
+        <p className="text-slate-500">Project not found</p>
+      </div>
+    );
   }
 
   return (
@@ -150,9 +158,12 @@ export default function ProjectFinancials() {
               <SelectItem value="all_time">All Time</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}
+          >
+            Back to Project
           </Button>
         </div>
       </div>
