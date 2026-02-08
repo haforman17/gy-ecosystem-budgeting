@@ -11,6 +11,7 @@ import LoadingState from "@/components/shared/LoadingState";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
 import ForecastChart from "@/components/forecast/ForecastChart";
+import EditableForecastTable from "@/components/forecast/EditableForecastTable";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { generateForecastPeriods, calculateFinancialMetrics } from "@/components/lib/forecastCalculations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +29,7 @@ export default function ProjectForecast() {
   const [selectedScenarioId, setSelectedScenarioId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState(null);
+  const [savedPeriods, setSavedPeriods] = useState([]);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -62,6 +64,45 @@ export default function ProjectForecast() {
 
   const selectedScenario = scenarios.find((s) => s.id === selectedScenarioId);
 
+  const { data: forecastPeriods = [] } = useQuery({
+    queryKey: ["forecastPeriods", selectedScenarioId],
+    queryFn: () => base44.entities.ForecastPeriod.filter({ scenario_id: selectedScenarioId }),
+    enabled: !!selectedScenarioId,
+  });
+
+  React.useEffect(() => {
+    setSavedPeriods(forecastPeriods);
+  }, [forecastPeriods]);
+
+  const saveForecastMutation = useMutation({
+    mutationFn: async (periods) => {
+      const promises = periods.map((period) =>
+        base44.entities.ForecastPeriod.create({ ...period, scenario_id: selectedScenarioId })
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forecastPeriods"] });
+      toast.success("Forecast saved");
+    },
+  });
+
+  const updatePeriodMutation = useMutation({
+    mutationFn: async (period) => {
+      return base44.entities.ForecastPeriod.update(period.id, {
+        projected_revenue: period.projected_revenue,
+        projected_expenses: period.projected_expenses,
+        projected_cash_flow: period.projected_revenue - period.projected_expenses,
+        carbon_credits_generated: period.carbon_credits_generated,
+        bng_habitat_units_generated: period.bng_habitat_units_generated,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forecastPeriods"] });
+      toast.success("Period updated");
+    },
+  });
+
   const deleteScenarioMutation = useMutation({
     mutationFn: (id) => base44.entities.ForecastScenario.delete(id),
     onSuccess: () => {
@@ -78,6 +119,12 @@ export default function ProjectForecast() {
   const forecastData = React.useMemo(() => {
     if (!project || !revenueStreams || !lineItems) return [];
 
+    // If we have saved periods, use those
+    if (savedPeriods.length > 0) {
+      return savedPeriods;
+    }
+
+    // Otherwise generate from assumptions
     if (selectedScenario && selectedScenario.assumptions) {
       return generateForecastPeriods(
         revenueStreams,
@@ -103,7 +150,7 @@ export default function ProjectForecast() {
     };
 
     return generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
-  }, [project, revenueStreams, lineItems, selectedScenario, years]);
+  }, [project, revenueStreams, lineItems, selectedScenario, years, savedPeriods]);
 
   const totals = React.useMemo(() => {
     const revenue = forecastData.reduce((sum, p) => sum + (p.projected_revenue || 0), 0);
@@ -287,73 +334,54 @@ export default function ProjectForecast() {
       {/* Revenue Forecast Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
-            Revenue & Cash Flow Forecast
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+              Revenue & Cash Flow Forecast
+              {savedPeriods.length > 0 && (
+                <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                  Saved
+                </span>
+              )}
+            </CardTitle>
+            {selectedScenarioId && savedPeriods.length === 0 && forecastData.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveForecastMutation.mutate(forecastData)}
+                disabled={saveForecastMutation.isPending}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saveForecastMutation.isPending ? "Saving..." : "Save Forecast"}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead className="text-xs font-semibold">Year</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Revenue</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Expenses</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Net Cash Flow</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Cumulative</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Carbon (tCO2e)</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">BNG (units)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {forecastData.map((period, idx) => {
-                  const cumulative = forecastData
-                    .slice(0, idx + 1)
-                    .reduce((sum, p) => sum + (p.projected_cash_flow || 0), 0);
-
-                  return (
-                    <TableRow key={period.year || idx}>
-                      <TableCell className="font-medium">Year {period.year}</TableCell>
-                      <TableCell className="text-right text-emerald-600">
-                        {formatCurrency(period.projected_revenue)}
-                      </TableCell>
-                      <TableCell className="text-right">{formatCurrency(period.projected_expenses)}</TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          period.projected_cash_flow >= 0 ? "text-emerald-600" : "text-red-600"
-                        }`}
-                      >
-                        {formatCurrency(period.projected_cash_flow)}
-                      </TableCell>
-                      <TableCell className={`text-right ${cumulative >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {formatCurrency(cumulative)}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-slate-500">
-                        {period.carbon_credits_generated?.toLocaleString() || "—"}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-slate-500">
-                        {period.bng_habitat_units_generated?.toLocaleString() || "—"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                <TableRow className="bg-slate-50 font-semibold">
-                  <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-right text-emerald-600">{formatCurrency(totals.revenue)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(totals.expenses)}</TableCell>
-                  <TableCell className={`text-right ${totals.cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {formatCurrency(totals.cashFlow)}
-                  </TableCell>
-                  <TableCell className={`text-right ${totals.cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {formatCurrency(totals.cashFlow)}
-                  </TableCell>
-                  <TableCell className="text-right">{totals.carbon.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{totals.bng.toLocaleString()}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+          <EditableForecastTable
+            forecastData={forecastData}
+            onUpdatePeriod={(period) => updatePeriodMutation.mutate(period)}
+            isSaved={savedPeriods.length > 0}
+          />
+          
+          <Table className="mt-4">
+            <TableBody>
+              <TableRow className="bg-slate-50 font-semibold border-t-2">
+                <TableCell className="w-20">TOTAL</TableCell>
+                <TableCell className="text-right text-emerald-600">{formatCurrency(totals.revenue)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(totals.expenses)}</TableCell>
+                <TableCell className={`text-right ${totals.cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {formatCurrency(totals.cashFlow)}
+                </TableCell>
+                <TableCell className={`text-right ${totals.cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {formatCurrency(totals.cashFlow)}
+                </TableCell>
+                <TableCell className="text-right">{totals.carbon.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{totals.bng.toLocaleString()}</TableCell>
+                {savedPeriods.length > 0 && <TableCell className="w-24"></TableCell>}
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

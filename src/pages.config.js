@@ -50,10 +50,10 @@
 import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectEdit from './pages/ProjectEdit';
-import ProjectNew from './pages/ProjectNew';
-import Projects from './pages/Projects';
 import ProjectFinancials from './pages/ProjectFinancials';
 import ProjectForecast from './pages/ProjectForecast';
+import ProjectNew from './pages/ProjectNew';
+import Projects from './pages/Projects';
 import __Layout from './Layout.jsx';
 
 
@@ -61,10 +61,10 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "ProjectDetail": ProjectDetail,
     "ProjectEdit": ProjectEdit,
-    "ProjectNew": ProjectNew,
-    "Projects": Projects,
     "ProjectFinancials": ProjectFinancials,
     "ProjectForecast": ProjectForecast,
+    "ProjectNew": ProjectNew,
+    "Projects": Projects,
 }
 
 export const pagesConfig = {
