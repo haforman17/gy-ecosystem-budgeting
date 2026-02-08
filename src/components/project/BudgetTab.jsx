@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,30 @@ export default function BudgetTab({ projectId, lineItems }) {
   const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
 
+  // Fetch transactions to calculate actual expenses
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions", projectId],
+    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
+    initialData: [],
+    enabled: !!projectId,
+  });
+
+  // Calculate actual amounts from transactions for each line item
+  const lineItemActuals = useMemo(() => {
+    const actuals = {};
+    lineItems.forEach((li) => {
+      const relatedTxs = transactions.filter(
+        (tx) => tx.transaction_type === "EXPENSE" && tx.line_item_id === li.id
+      );
+      const totalExpense = relatedTxs.reduce((sum, tx) => {
+        const amt = Number(tx.amount) || 0;
+        return sum + amt;
+      }, 0);
+      actuals[li.id] = totalExpense;
+    });
+    return actuals;
+  }, [transactions, lineItems]);
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.LineItem.delete(id),
     onSuccess: () => {
@@ -33,7 +57,7 @@ export default function BudgetTab({ projectId, lineItems }) {
   });
 
   const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
-  const totalActual = lineItems.reduce((sum, li) => sum + (li.actual_amount || 0), 0);
+  const totalActual = lineItems.reduce((sum, li) => sum + (lineItemActuals[li.id] || 0), 0);
 
   // Chart data grouped by category
   const categoryBudgetData = {};
@@ -41,7 +65,7 @@ export default function BudgetTab({ projectId, lineItems }) {
   lineItems.forEach((li) => {
     const cat = li.category || "OTHER";
     categoryBudgetData[cat] = (categoryBudgetData[cat] || 0) + (li.budget_amount || 0);
-    categoryActualData[cat] = (categoryActualData[cat] || 0) + (li.actual_amount || 0);
+    categoryActualData[cat] = (categoryActualData[cat] || 0) + (lineItemActuals[li.id] || 0);
   });
   
   const budgetChartData = Object.entries(categoryBudgetData).map(([name, value]) => ({
@@ -96,13 +120,14 @@ export default function BudgetTab({ projectId, lineItems }) {
                   </TableHeader>
                   <TableBody>
                     {lineItems.map((li) => {
-                      const variance = (li.budget_amount || 0) - (li.actual_amount || 0);
+                      const actualAmount = lineItemActuals[li.id] || 0;
+                      const variance = (li.budget_amount || 0) - actualAmount;
                       return (
                         <TableRow key={li.id}>
                           <TableCell className="text-xs font-medium text-slate-600">{getLabel(li.category)}</TableCell>
                           <TableCell className="text-sm text-slate-700">{li.description}</TableCell>
                           <TableCell className="text-right text-sm font-medium">{formatCurrency(li.budget_amount)}</TableCell>
-                          <TableCell className="text-right text-sm">{formatCurrency(li.actual_amount)}</TableCell>
+                          <TableCell className="text-right text-sm">{formatCurrency(actualAmount)}</TableCell>
                           <TableCell className={`text-right text-sm font-medium ${variance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                             {formatCurrency(variance)}
                           </TableCell>
