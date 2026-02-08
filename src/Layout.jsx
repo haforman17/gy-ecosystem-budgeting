@@ -10,12 +10,18 @@ import {
   X,
   ChevronRight,
   LogOut,
+  FileText,
+  Shield,
+  History,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { label: "Projects", icon: FolderTree, page: "Projects" },
+  { label: "Reports", icon: FileText, page: "Reports" },
+  { label: "Compliance", icon: Shield, page: "Compliance" },
+  { label: "Audit Log", icon: History, page: "AuditLog", adminOnly: true },
 ];
 
 export default function Layout({ children, currentPageName }) {
