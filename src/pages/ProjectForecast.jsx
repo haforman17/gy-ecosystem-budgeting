@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,19 +11,22 @@ import LoadingState from "@/components/shared/LoadingState";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 
 export default function ProjectForecast() {
-  const { id } = useParams();
+  const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectId = urlParams.get("id");
   const [years] = useState(30);
 
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ["project", id],
-    queryFn: () => base44.entities.Project.filter({ id }),
+    queryKey: ["project", projectId],
+    queryFn: () => base44.entities.Project.filter({ id: projectId }),
     select: (data) => data[0],
+    enabled: !!projectId,
   });
 
   const { data: scenarios = [], isLoading: scenariosLoading } = useQuery({
-    queryKey: ["forecastScenarios", id],
-    queryFn: () => base44.entities.ForecastScenario.filter({ project_id: id }),
-    enabled: !!id,
+    queryKey: ["forecastScenarios", projectId],
+    queryFn: () => base44.entities.ForecastScenario.filter({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   const [selectedScenario] = useState(scenarios[0]?.id || null);
@@ -76,7 +80,11 @@ export default function ProjectForecast() {
   }
 
   if (!project) {
-    return <Navigate to="/projects" replace />;
+    return (
+      <div className="text-center py-20">
+        <p className="text-slate-500">Project not found</p>
+      </div>
+    );
   }
 
   return (
@@ -88,13 +96,12 @@ export default function ProjectForecast() {
           <p className="text-sm text-slate-500 mt-1">30-Year Financial Forecast</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Scenario
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}
+          >
+            Back to Project
           </Button>
         </div>
       </div>
