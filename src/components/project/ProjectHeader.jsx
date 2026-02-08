@@ -1,11 +1,14 @@
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import { ArrowLeft, MapPin, Calendar, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
+import ConfirmDialog from "../shared/ConfirmDialog";
 
 export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast }) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -48,7 +51,7 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
               </Button>
-              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600" onClick={onDelete}>
+              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600" onClick={() => setShowDeleteDialog(true)}>
                 <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
               </Button>
             </div>
@@ -58,6 +61,18 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
       {project.description && (
         <p className="text-sm text-slate-500 ml-12">{project.description}</p>
       )}
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Project"
+        description="Are you sure you want to delete your project? All your data and work will be lost. This action cannot be undone."
+        onConfirm={() => {
+          setShowDeleteDialog(false);
+          onDelete();
+        }}
+        destructive
+      />
     </div>
   );
 }
