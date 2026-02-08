@@ -119,14 +119,15 @@ export default function ProjectForecast() {
   const forecastData = React.useMemo(() => {
     if (!project || !revenueStreams || !lineItems) return [];
 
+    let periods = [];
+
     // If we have saved periods, use those
     if (savedPeriods.length > 0) {
-      return savedPeriods;
+      periods = savedPeriods;
     }
-
     // Otherwise generate from assumptions
-    if (selectedScenario && selectedScenario.assumptions) {
-      return generateForecastPeriods(
+    else if (selectedScenario && selectedScenario.assumptions) {
+      periods = generateForecastPeriods(
         revenueStreams,
         lineItems,
         selectedScenario.assumptions,
@@ -134,22 +135,26 @@ export default function ProjectForecast() {
         years
       );
     }
-
     // Default scenario if none selected
-    const defaultAssumptions = {
-      carbon_price: 25,
-      bng_habitat_price: 42000,
-      bng_hedgerow_price: 28000,
-      watercourse_price: 35000,
-      nfm_price: 15000,
-      price_escalation_rate: 0.03,
-      maintenance_cost_increase: 0.02,
-      establishment_success_rate: 0.95,
-      annual_mortality_rate: 0.01,
-      discount_rate: 0.05,
-    };
+    else {
+      const defaultAssumptions = {
+        carbon_price: 25,
+        bng_habitat_price: 42000,
+        bng_hedgerow_price: 28000,
+        watercourse_price: 35000,
+        nfm_price: 15000,
+        price_escalation_rate: 0.03,
+        maintenance_cost_increase: 0.02,
+        establishment_success_rate: 0.95,
+        annual_mortality_rate: 0.01,
+        discount_rate: 0.05,
+      };
 
-    return generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
+      periods = generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
+    }
+
+    // Always sort by year to ensure correct order
+    return periods.sort((a, b) => (a.year || 0) - (b.year || 0));
   }, [project, revenueStreams, lineItems, selectedScenario, years, savedPeriods]);
 
   const totals = React.useMemo(() => {
