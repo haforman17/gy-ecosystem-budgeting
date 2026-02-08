@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Download, Plus, Settings, Trash2, Save } from "lucide-react";
+import { TrendingUp, Download, Plus, Settings, Trash2, Save, Upload, FileSpreadsheet } from "lucide-react";
 import LoadingState from "@/components/shared/LoadingState";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
@@ -17,6 +17,7 @@ import { generateForecastPeriods, calculateFinancialMetrics } from "@/components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 export default function ProjectForecast() {
   const navigate = useNavigate();
@@ -115,6 +116,72 @@ export default function ProjectForecast() {
       }
     },
   });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async (periods) => {
+      const promises = periods.map((period) =>
+        base44.entities.ForecastPeriod.update(period.id, period)
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forecastPeriods"] });
+      toast.success("Forecast updated from file");
+    },
+  });
+
+  const downloadTemplate = () => {
+    const templateData = forecastData.map((period) => ({
+      Year: period.year,
+      Revenue: period.projected_revenue || 0,
+      Expenses: period.projected_expenses || 0,
+      "Carbon Credits": period.carbon_credits_generated || 0,
+      "BNG Units": period.bng_habitat_units_generated || 0,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Forecast");
+    XLSX.writeFile(wb, `${project?.name || "Project"}_Forecast_Template.xlsx`);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (savedPeriods.length === 0) {
+        toast.error("Please save the forecast first before uploading updates");
+        return;
+      }
+
+      const updatedPeriods = savedPeriods.map((period) => {
+        const row = jsonData.find((r) => r.Year === period.year);
+        if (row) {
+          return {
+            ...period,
+            projected_revenue: Number(row.Revenue) || period.projected_revenue,
+            projected_expenses: Number(row.Expenses) || period.projected_expenses,
+            projected_cash_flow: (Number(row.Revenue) || 0) - (Number(row.Expenses) || 0),
+            carbon_credits_generated: Number(row["Carbon Credits"]) || period.carbon_credits_generated,
+            bng_habitat_units_generated: Number(row["BNG Units"]) || period.bng_habitat_units_generated,
+          };
+        }
+        return period;
+      });
+
+      bulkUpdateMutation.mutate(updatedPeriods);
+    } catch (error) {
+      toast.error("Failed to process file. Please check the format.");
+    }
+
+    e.target.value = "";
+  };
 
   const forecastData = React.useMemo(() => {
     if (!project || !revenueStreams || !lineItems) return [];
@@ -349,17 +416,52 @@ export default function ProjectForecast() {
                 </span>
               )}
             </CardTitle>
-            {selectedScenarioId && savedPeriods.length === 0 && forecastData.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => saveForecastMutation.mutate(forecastData)}
-                disabled={saveForecastMutation.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saveForecastMutation.isPending ? "Saving..." : "Save Forecast"}
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {forecastData.length > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadTemplate}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Download Template
+                  </Button>
+                  {savedPeriods.length > 0 && (
+                    <label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={bulkUpdateMutation.isPending}
+                        asChild
+                      >
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          {bulkUpdateMutation.isPending ? "Uploading..." : "Upload File"}
+                        </span>
+                      </Button>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </>
+              )}
+              {selectedScenarioId && savedPeriods.length === 0 && forecastData.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => saveForecastMutation.mutate(forecastData)}
+                  disabled={saveForecastMutation.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveForecastMutation.isPending ? "Saving..." : "Save Forecast"}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
