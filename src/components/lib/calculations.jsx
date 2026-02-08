@@ -214,10 +214,8 @@ export function calculateBalanceSheet(
     .filter((rs) => rs.verification_status === "VERIFIED")
     .reduce((sum, rs) => sum + ((rs.estimated_revenue || 0) - (rs.actual_revenue || 0)), 0);
 
-  // Work in Progress
-  const workInProgress = historicalTxs
-    .filter((tx) => tx.transaction_type === "EXPENSE")
-    .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  // Work in Progress - costs not yet converted to credit inventory
+  const workInProgress = 0; // Simplified: direct costs treated as COGS
 
   // Credit Inventory
   const verifiedRevenue = revenueStreams.filter((rs) => rs.verification_status === "VERIFIED");
@@ -259,8 +257,16 @@ export function calculateBalanceSheet(
   const totalInventory = carbonInventory + bngHabitatInventory + bngHedgerowInventory + watercourseInventory + nfmInventory;
 
   const totalCurrentAssets = cash + accountsReceivable + workInProgress + totalInventory;
+  
+  // Fixed Assets - equipment purchases
+  const equipment = historicalTxs
+    .filter((tx) => {
+      const li = lineItems.find((l) => l.id === tx.line_item_id);
+      return li?.category === "EQUIPMENT" && tx.transaction_type === "EXPENSE";
+    })
+    .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  
   const land = 0;
-  const equipment = 0;
   const totalFixedAssets = land + equipment;
   const totalAssets = totalCurrentAssets + totalFixedAssets;
 
