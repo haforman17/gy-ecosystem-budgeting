@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,33 @@ export default function RevenueTab({ projectId, revenueStreams }) {
   const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
+
+  // Fetch transactions to calculate real values
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions", projectId],
+    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
+    initialData: [],
+  });
+
+  // Calculate real values from transactions for each revenue stream
+  const revenueCalcs = useMemo(() => {
+    const calcs = {};
+    revenueStreams.forEach((rs) => {
+      const relatedTxs = transactions.filter(
+        (tx) => tx.transaction_type === "REVENUE" && tx.revenue_stream_id === rs.id
+      );
+      const totalQuantity = relatedTxs.reduce((sum, tx) => sum + (tx.units_quantity || 0), 0);
+      const totalRevenue = relatedTxs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+      const avgPrice = totalQuantity > 0 ? totalRevenue / totalQuantity : 0;
+      
+      calcs[rs.id] = {
+        realVolume: totalQuantity,
+        realAvgPrice: avgPrice,
+        realRevenue: totalRevenue,
+      };
+    });
+    return calcs;
+  }, [transactions, revenueStreams]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.RevenueStream.delete(id),
@@ -91,10 +118,10 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                         <TableCell className="text-right text-sm font-medium text-emerald-700">
                           {formatCurrency(rs.estimated_revenue || ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0)))}
                         </TableCell>
-                        <TableCell className="text-right text-sm">{formatNumber(rs.actual_volume)}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(rs.actual_price_per_unit)}</TableCell>
+                        <TableCell className="text-right text-sm">{formatNumber(revenueCalcs[rs.id]?.realVolume || 0)}</TableCell>
+                        <TableCell className="text-right text-sm">{formatCurrency(revenueCalcs[rs.id]?.realAvgPrice || 0)}</TableCell>
                         <TableCell className="text-right text-sm font-medium text-emerald-700">
-                          {formatCurrency(rs.actual_revenue || ((rs.actual_volume || 0) * (rs.actual_price_per_unit || 0)))}
+                          {formatCurrency(revenueCalcs[rs.id]?.realRevenue || 0)}
                         </TableCell>
                         <TableCell><StatusBadge value={rs.verification_status} /></TableCell>
                         <TableCell className="text-xs text-slate-500">{rs.vintage || "—"}</TableCell>
