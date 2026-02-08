@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Download, Plus, Settings, Trash2 } from "lucide-react";
+import { TrendingUp, Download, Plus, Settings, Trash2, Save } from "lucide-react";
 import LoadingState from "@/components/shared/LoadingState";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
