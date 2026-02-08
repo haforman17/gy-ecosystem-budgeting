@@ -135,7 +135,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{transaction ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
         </DialogHeader>

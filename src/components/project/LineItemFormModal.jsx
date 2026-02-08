@@ -82,7 +82,7 @@ export default function LineItemFormModal({ projectId, item, onClose }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item ? "Edit Line Item" : "Add Line Item"}</DialogTitle>
         </DialogHeader>
