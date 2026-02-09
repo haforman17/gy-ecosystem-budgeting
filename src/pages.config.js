@@ -67,11 +67,12 @@ import ProjectDetail from './pages/ProjectDetail';
 import ProjectEdit from './pages/ProjectEdit';
 import ProjectFinancials from './pages/ProjectFinancials';
 import ProjectForecast from './pages/ProjectForecast';
+import ProjectMonthlyForecast from './pages/ProjectMonthlyForecast';
 import ProjectNew from './pages/ProjectNew';
 import Projects from './pages/Projects';
 import ReportGenerate from './pages/ReportGenerate';
 import Reports from './pages/Reports';
-import ProjectMonthlyForecast from './pages/ProjectMonthlyForecast';
+import ProjectQuarterlyForecast from './pages/ProjectQuarterlyForecast';
 import __Layout from './Layout.jsx';
 
 
@@ -96,11 +97,12 @@ export const PAGES = {
     "ProjectEdit": ProjectEdit,
     "ProjectFinancials": ProjectFinancials,
     "ProjectForecast": ProjectForecast,
+    "ProjectMonthlyForecast": ProjectMonthlyForecast,
     "ProjectNew": ProjectNew,
     "Projects": Projects,
     "ReportGenerate": ReportGenerate,
     "Reports": Reports,
-    "ProjectMonthlyForecast": ProjectMonthlyForecast,
+    "ProjectQuarterlyForecast": ProjectQuarterlyForecast,
 }
 
 export const pagesConfig = {

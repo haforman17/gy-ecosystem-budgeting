@@ -91,6 +91,7 @@ export default function ProjectDetail() {
         onFinancials={() => navigate(createPageUrl(`ProjectFinancials?id=${projectId}`))}
         onForecast={() => navigate(createPageUrl(`ProjectForecast?id=${projectId}`))}
         onMonthlyForecast={() => navigate(createPageUrl(`ProjectMonthlyForecast?id=${projectId}`))}
+        onQuarterlyForecast={() => navigate(createPageUrl(`ProjectQuarterlyForecast?id=${projectId}`))}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

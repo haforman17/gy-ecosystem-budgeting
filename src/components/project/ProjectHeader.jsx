@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
-import { ArrowLeft, MapPin, Calendar as CalendarIcon, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar as CalendarIcon, Ruler, Pencil, Trash2, FileText, TrendingUp, PieChart } from "lucide-react";
 import { format } from "date-fns";
 import ConfirmDialog from "../shared/ConfirmDialog";
 
-export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast, onMonthlyForecast }) {
+export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast, onMonthlyForecast, onQuarterlyForecast }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   return (
     <div className="space-y-4">
@@ -51,6 +51,11 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
               {onMonthlyForecast && (
                 <Button variant="outline" size="sm" onClick={onMonthlyForecast}>
                   <CalendarIcon className="h-3.5 w-3.5 mr-1.5" /> Monthly
+                </Button>
+              )}
+              {onQuarterlyForecast && (
+                <Button variant="outline" size="sm" onClick={onQuarterlyForecast}>
+                  <PieChart className="h-3.5 w-3.5 mr-1.5" /> Quarterly
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={onEdit}>
