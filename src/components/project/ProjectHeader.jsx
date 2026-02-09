@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
-import { ArrowLeft, MapPin, Calendar, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar as CalendarIcon, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import ConfirmDialog from "../shared/ConfirmDialog";
 
-export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast }) {
+export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast, onMonthlyForecast }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   return (
     <div className="space-y-4">
@@ -31,7 +31,7 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
                   <Ruler className="h-3 w-3" /> {project.site_area} ha
                 </span>
                 <span className="flex items-center gap-1 text-xs text-slate-400">
-                  <Calendar className="h-3 w-3" />
+                  <CalendarIcon className="h-3 w-3" />
                   {project.start_date ? format(new Date(project.start_date), "MMM yyyy") : "—"}
                   {project.end_date && ` – ${format(new Date(project.end_date), "MMM yyyy")}`}
                 </span>
@@ -45,7 +45,12 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
               )}
               {onForecast && (
                 <Button variant="outline" size="sm" onClick={onForecast}>
-                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Forecast
+                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> 30-Year
+                </Button>
+              )}
+              {onMonthlyForecast && (
+                <Button variant="outline" size="sm" onClick={onMonthlyForecast}>
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5" /> Monthly
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={onEdit}>

@@ -90,6 +90,7 @@ export default function ProjectDetail() {
         onDelete={() => setShowDeleteDialog(true)}
         onFinancials={() => navigate(createPageUrl(`ProjectFinancials?id=${projectId}`))}
         onForecast={() => navigate(createPageUrl(`ProjectForecast?id=${projectId}`))}
+        onMonthlyForecast={() => navigate(createPageUrl(`ProjectMonthlyForecast?id=${projectId}`))}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
