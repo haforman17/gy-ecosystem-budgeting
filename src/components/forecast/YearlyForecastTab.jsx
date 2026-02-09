@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Download, Plus, Settings, Trash2, Save, Upload, FileSpreadsheet } from "lucide-react";
+import { TrendingUp, Download, Plus, Settings, Trash2, Save, Upload, FileSpreadsheet, Calendar } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
 import ForecastChart from "@/components/forecast/ForecastChart";
@@ -14,6 +14,8 @@ import { generateForecastPeriods, calculateFinancialMetrics } from "@/components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseISO } from "date-fns";
 
 export default function YearlyForecastTab({ projectId, project }) {
   const queryClient = useQueryClient();
@@ -40,6 +42,18 @@ export default function YearlyForecastTab({ projectId, project }) {
   const { data: lineItems = [] } = useQuery({
     queryKey: ["lineItems", projectId],
     queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions", projectId],
+    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: fundingSources = [] } = useQuery({
+    queryKey: ["fundingSources", projectId],
+    queryFn: () => base44.entities.FundingSource.filter({ project_id: projectId }),
     enabled: !!projectId,
   });
 
@@ -204,12 +218,74 @@ export default function YearlyForecastTab({ projectId, project }) {
     return periods.sort((a, b) => (a.year || 0) - (b.year || 0));
   }, [project, revenueStreams, lineItems, selectedScenario, years, savedPeriods]);
 
+  // Calculate yearly actuals from transactions
+  const yearlyActuals = React.useMemo(() => {
+    if (!project) return [];
+    
+    const startYear = new Date(project.start_date).getFullYear();
+    const currentYear = new Date().getFullYear();
+    const yearsArray = [];
+    
+    for (let year = startYear; year <= currentYear; year++) {
+      const yearTransactions = transactions.filter((t) => {
+        const tYear = new Date(t.date).getFullYear();
+        return tYear === year;
+      });
+
+      const revenue = yearTransactions
+        .filter((t) => t.transaction_type === "REVENUE")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const expenses = yearTransactions
+        .filter((t) => t.transaction_type === "EXPENSE")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const funding = yearTransactions
+        .filter((t) => t.transaction_type === "FUNDING_DRAWDOWN")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      yearsArray.push({
+        year: year,
+        actualRevenue: revenue,
+        actualExpenses: expenses,
+        actualFunding: funding,
+        actualNetCashFlow: revenue - expenses + funding,
+      });
+    }
+    
+    return yearsArray;
+  }, [transactions, project]);
+
+  // Combine forecast and actuals
+  const combinedData = React.useMemo(() => {
+    return forecastData.map((forecast) => {
+      const actual = yearlyActuals.find((a) => a.year === forecast.year) || {
+        actualRevenue: 0,
+        actualExpenses: 0,
+        actualFunding: 0,
+        actualNetCashFlow: 0,
+      };
+      
+      return {
+        ...forecast,
+        ...actual,
+        varianceRevenue: actual.actualRevenue - (forecast.projected_revenue || 0),
+        varianceExpenses: actual.actualExpenses - (forecast.projected_expenses || 0),
+        varianceNetCashFlow: actual.actualNetCashFlow - (forecast.projected_cash_flow || 0),
+      };
+    });
+  }, [forecastData, yearlyActuals]);
+
   const totals = React.useMemo(() => {
     const revenue = forecastData.reduce((sum, p) => sum + (p.projected_revenue || 0), 0);
     const expenses = forecastData.reduce((sum, p) => sum + (p.projected_expenses || 0), 0);
     const cashFlow = revenue - expenses;
     const carbon = forecastData.reduce((sum, p) => sum + (p.carbon_credits_generated || 0), 0);
     const bng = forecastData.reduce((sum, p) => sum + (p.bng_habitat_units_generated || 0), 0);
+
+    const actualRevenue = combinedData.reduce((sum, p) => sum + (p.actualRevenue || 0), 0);
+    const actualExpenses = combinedData.reduce((sum, p) => sum + (p.actualExpenses || 0), 0);
+    const actualNetCashFlow = combinedData.reduce((sum, p) => sum + (p.actualNetCashFlow || 0), 0);
 
     const metrics = calculateFinancialMetrics(
       forecastData,
@@ -222,9 +298,15 @@ export default function YearlyForecastTab({ projectId, project }) {
       cashFlow,
       carbon,
       bng,
+      actualRevenue,
+      actualExpenses,
+      actualNetCashFlow,
+      varianceRevenue: actualRevenue - revenue,
+      varianceExpenses: actualExpenses - expenses,
+      varianceNetCashFlow: actualNetCashFlow - cashFlow,
       ...metrics,
     };
-  }, [forecastData, selectedScenario]);
+  }, [forecastData, selectedScenario, combinedData]);
 
   return (
     <div className="space-y-6">
@@ -308,64 +390,135 @@ export default function YearlyForecastTab({ projectId, project }) {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Total Revenue (30yr)</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500">Forecast Revenue (30yr)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.revenue)}</p>
+            <p className="text-xl font-bold text-slate-900">{formatCurrency(totals.revenue)}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Total Costs (30yr)</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500">Actual Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(totals.expenses)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Net Cash Flow</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${totals.cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {formatCurrency(totals.cashFlow)}
+            <p className="text-xl font-bold text-emerald-600">{formatCurrency(totals.actualRevenue)}</p>
+            <p className={`text-sm mt-1 ${totals.varianceRevenue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              {totals.varianceRevenue >= 0 ? "+" : ""}
+              {formatCurrency(totals.varianceRevenue)} variance
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Carbon Credits</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500">Forecast Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-slate-900">{totals.carbon.toLocaleString()} tCO2e</p>
+            <p className="text-xl font-bold text-slate-900">{formatCurrency(totals.expenses)}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">NPV / IRR</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500">Actual Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-bold text-slate-900">{formatCurrency(totals.npv)}</p>
-            {totals.irr && <p className="text-sm text-slate-500">{(totals.irr * 100).toFixed(1)}% IRR</p>}
+            <p className="text-xl font-bold text-slate-900">{formatCurrency(totals.actualExpenses)}</p>
+            <p className={`text-sm mt-1 ${totals.varianceExpenses <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              {totals.varianceExpenses >= 0 ? "+" : ""}
+              {formatCurrency(totals.varianceExpenses)} variance
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ForecastChart forecastData={forecastData} type="line" />
-        <ForecastChart forecastData={forecastData} type="bar" />
-      </div>
+      <Tabs defaultValue="comparison" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="comparison">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Forecast vs Actuals
+          </TabsTrigger>
+          <TabsTrigger value="forecast">
+            <Calendar className="h-4 w-4 mr-2" />
+            Forecast Only
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Table */}
-      <Card>
+        <TabsContent value="comparison" className="space-y-4">
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ForecastChart forecastData={combinedData} type="line" showActuals />
+            <ForecastChart forecastData={combinedData} type="bar" showActuals />
+          </div>
+
+          {/* Comparison Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  Forecast vs Actuals Comparison
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="font-semibold">Year</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Revenue</TableHead>
+                      <TableHead className="text-right font-semibold">Variance</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
+                      <TableHead className="text-right font-semibold">Variance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {combinedData.slice(0, 10).map((item, idx) => (
+                      <TableRow key={idx} className="hover:bg-slate-50">
+                        <TableCell className="font-medium">{item.year}</TableCell>
+                        <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_revenue || 0)}</TableCell>
+                        <TableCell className="text-right text-emerald-600 font-medium">
+                          {formatCurrency(item.actualRevenue || 0)}
+                        </TableCell>
+                        <TableCell className={`text-right ${(item.varianceRevenue || 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          {(item.varianceRevenue || 0) >= 0 ? "+" : ""}
+                          {formatCurrency(item.varianceRevenue || 0)}
+                        </TableCell>
+                        <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_expenses || 0)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.actualExpenses || 0)}</TableCell>
+                        <TableCell className={`text-right ${(item.varianceExpenses || 0) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          {(item.varianceExpenses || 0) >= 0 ? "+" : ""}
+                          {formatCurrency(item.varianceExpenses || 0)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="forecast" className="space-y-4">
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ForecastChart forecastData={forecastData} type="line" />
+            <ForecastChart forecastData={forecastData} type="bar" />
+          </div>
+
+          {/* Table */}
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -450,7 +603,9 @@ export default function YearlyForecastTab({ projectId, project }) {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <ScenarioFormModal
         open={showScenarioForm}
