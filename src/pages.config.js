@@ -47,34 +47,40 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AuditLog from './pages/AuditLog';
+import Compliance from './pages/Compliance';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectEdit from './pages/ProjectEdit';
 import ProjectFinancials from './pages/ProjectFinancials';
 import ProjectForecast from './pages/ProjectForecast';
 import ProjectNew from './pages/ProjectNew';
 import Projects from './pages/Projects';
-import Reports from './pages/Reports';
 import ReportGenerate from './pages/ReportGenerate';
-import Compliance from './pages/Compliance';
-import AuditLog from './pages/AuditLog';
-import Home from './pages/Home';
+import Reports from './pages/Reports';
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
+import About from './pages/About';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AuditLog": AuditLog,
+    "Compliance": Compliance,
     "Dashboard": Dashboard,
+    "Home": Home,
     "ProjectDetail": ProjectDetail,
     "ProjectEdit": ProjectEdit,
     "ProjectFinancials": ProjectFinancials,
     "ProjectForecast": ProjectForecast,
     "ProjectNew": ProjectNew,
     "Projects": Projects,
-    "Reports": Reports,
     "ReportGenerate": ReportGenerate,
-    "Compliance": Compliance,
-    "AuditLog": AuditLog,
-    "Home": Home,
+    "Reports": Reports,
+    "Features": Features,
+    "Pricing": Pricing,
+    "About": About,
 }
 
 export const pagesConfig = {
