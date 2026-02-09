@@ -2,9 +2,11 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { format } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function CashFlowTab({ data, startDate, endDate }) {
   if (!data) {
@@ -16,6 +18,82 @@ export default function CashFlowTab({ data, startDate, endDate }) {
       </Card>
     );
   }
+
+  const exportToCSV = () => {
+    const csvData = [
+      ["Statement of Cash Flows", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["OPERATING ACTIVITIES"],
+      ["Net Income", data.operatingActivities.netIncome],
+      ["Add back: Interest Expense", data.operatingActivities.adjustments.interestExpense],
+      ["Change in Accounts Receivable", data.operatingActivities.adjustments.changeInAR],
+      ["Change in Credit Inventory", data.operatingActivities.adjustments.changeInInventory],
+      ["Change in Accounts Payable", data.operatingActivities.adjustments.changeInAP],
+      ["Net Cash from Operating", data.operatingActivities.netOperatingCash],
+      [],
+      ["INVESTING ACTIVITIES"],
+      ["Land Acquisition", data.investingActivities.landAcquisition],
+      ["Equipment Purchases", data.investingActivities.equipmentPurchases],
+      ["Capital Improvements", data.investingActivities.capitalImprovements],
+      ["Net Cash from Investing", data.investingActivities.netInvestingCash],
+      [],
+      ["FINANCING ACTIVITIES"],
+      ["Grant Receipts", data.financingActivities.grantReceipts],
+      ["Debt Drawdowns", data.financingActivities.debtDrawdowns],
+      ["Debt Repayments", data.financingActivities.debtRepayments],
+      ["Equity Contributions", data.financingActivities.equityContributions],
+      ["Net Cash from Financing", data.financingActivities.netFinancingCash],
+      [],
+      ["NET CHANGE IN CASH", data.netChangeInCash],
+      ["Beginning Cash Balance", data.beginningCash],
+      ["Ending Cash Balance", data.endingCash],
+    ];
+    
+    const csv = csvData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cash-flow-${format(startDate, "yyyy-MM-dd")}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    const wsData = [
+      ["Statement of Cash Flows", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["OPERATING ACTIVITIES"],
+      ["Net Income", data.operatingActivities.netIncome],
+      ["Add back: Interest Expense", data.operatingActivities.adjustments.interestExpense],
+      ["Change in Accounts Receivable", data.operatingActivities.adjustments.changeInAR],
+      ["Change in Credit Inventory", data.operatingActivities.adjustments.changeInInventory],
+      ["Change in Accounts Payable", data.operatingActivities.adjustments.changeInAP],
+      ["Net Cash from Operating", data.operatingActivities.netOperatingCash],
+      [],
+      ["INVESTING ACTIVITIES"],
+      ["Land Acquisition", data.investingActivities.landAcquisition],
+      ["Equipment Purchases", data.investingActivities.equipmentPurchases],
+      ["Capital Improvements", data.investingActivities.capitalImprovements],
+      ["Net Cash from Investing", data.investingActivities.netInvestingCash],
+      [],
+      ["FINANCING ACTIVITIES"],
+      ["Grant Receipts", data.financingActivities.grantReceipts],
+      ["Debt Drawdowns", data.financingActivities.debtDrawdowns],
+      ["Debt Repayments", data.financingActivities.debtRepayments],
+      ["Equity Contributions", data.financingActivities.equityContributions],
+      ["Net Cash from Financing", data.financingActivities.netFinancingCash],
+      [],
+      ["NET CHANGE IN CASH", data.netChangeInCash],
+      ["Beginning Cash Balance", data.beginningCash],
+      ["Ending Cash Balance", data.endingCash],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cash Flow");
+    XLSX.writeFile(wb, `cash-flow-${format(startDate, "yyyy-MM-dd")}.xlsx`);
+  };
 
   return (
     <div className="space-y-4">
@@ -31,10 +109,22 @@ export default function CashFlowTab({ data, startDate, endDate }) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Statement of Cash Flows</CardTitle>
-            <p className="text-sm text-slate-500">
-              {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
-            </p>
+            <div>
+              <CardTitle>Statement of Cash Flows</CardTitle>
+              <p className="text-sm text-slate-500 mt-1">
+                {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToExcel}>
+                <Download className="h-4 w-4 mr-2" />
+                Excel
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

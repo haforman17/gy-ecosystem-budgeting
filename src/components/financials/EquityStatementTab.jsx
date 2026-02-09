@@ -1,8 +1,11 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { format } from "date-fns";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function EquityStatementTab({ data, startDate, endDate }) {
   if (!data) {
@@ -15,14 +18,74 @@ export default function EquityStatementTab({ data, startDate, endDate }) {
     );
   }
 
+  const exportToCSV = () => {
+    const csvData = [
+      ["Statement of Changes in Equity", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["Component", "Contributed Capital", "Grant Funding", "Retained Earnings", "Total"],
+      ["Beginning Balance", data.beginningBalance.contributed, data.beginningBalance.grants, data.beginningBalance.retained, data.beginningBalance.total],
+      [],
+      ["Changes During Period:"],
+      ["Equity Contributions", data.changes.equityContributions, 0, 0, data.changes.equityContributions],
+      ["Grant Income Recognized", 0, data.changes.grantIncome, 0, data.changes.grantIncome],
+      ["Net Income for Period", 0, 0, data.changes.netIncome, data.changes.netIncome],
+      ...(data.changes.distributions !== 0 ? [["Distributions/Dividends", 0, 0, -data.changes.distributions, -data.changes.distributions]] : []),
+      [],
+      ["Ending Balance", data.endingBalance.contributed, data.endingBalance.grants, data.endingBalance.retained, data.endingBalance.total],
+    ];
+    
+    const csv = csvData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `equity-statement-${format(startDate, "yyyy-MM-dd")}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    const wsData = [
+      ["Statement of Changes in Equity", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["Component", "Contributed Capital", "Grant Funding", "Retained Earnings", "Total"],
+      ["Beginning Balance", data.beginningBalance.contributed, data.beginningBalance.grants, data.beginningBalance.retained, data.beginningBalance.total],
+      [],
+      ["Changes During Period:"],
+      ["Equity Contributions", data.changes.equityContributions, 0, 0, data.changes.equityContributions],
+      ["Grant Income Recognized", 0, data.changes.grantIncome, 0, data.changes.grantIncome],
+      ["Net Income for Period", 0, 0, data.changes.netIncome, data.changes.netIncome],
+      ...(data.changes.distributions !== 0 ? [["Distributions/Dividends", 0, 0, -data.changes.distributions, -data.changes.distributions]] : []),
+      [],
+      ["Ending Balance", data.endingBalance.contributed, data.endingBalance.grants, data.endingBalance.retained, data.endingBalance.total],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Equity Statement");
+    XLSX.writeFile(wb, `equity-statement-${format(startDate, "yyyy-MM-dd")}.xlsx`);
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Statement of Changes in Equity</CardTitle>
-          <p className="text-sm text-slate-500">
-            {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
-          </p>
+          <div>
+            <CardTitle>Statement of Changes in Equity</CardTitle>
+            <p className="text-sm text-slate-500 mt-1">
+              {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
+              <Download className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

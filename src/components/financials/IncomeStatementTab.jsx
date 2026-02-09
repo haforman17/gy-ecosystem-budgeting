@@ -1,9 +1,11 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { format } from "date-fns";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function IncomeStatementTab({ data, startDate, endDate }) {
   if (!data) {
@@ -16,14 +18,122 @@ export default function IncomeStatementTab({ data, startDate, endDate }) {
     );
   }
 
+  const exportToCSV = () => {
+    const csvData = [
+      ["Income Statement", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["REVENUE"],
+      ["Carbon Credit Sales", data.revenue.carbonSales],
+      ["BNG Unit Sales", data.revenue.bngSales],
+      ["Watercourse Unit Sales", data.revenue.watercourseSales],
+      ["NFM Credit Sales", data.revenue.nfmSales],
+      ["Other Revenue", data.revenue.otherRevenue],
+      ["Total Revenue", data.revenue.totalRevenue],
+      [],
+      ["COST OF GOODS SOLD"],
+      ["Site Preparation", data.cogs.sitePreparation],
+      ["Planting", data.cogs.planting],
+      ["Fencing", data.cogs.fencing],
+      ["Initial Surveys", data.cogs.surveys],
+      ["Total COGS", data.cogs.totalCOGS],
+      ["Gross Profit", data.grossProfit],
+      ["Gross Margin %", data.grossMargin],
+      [],
+      ["OPERATING EXPENSES"],
+      ["Monitoring", data.operatingExpenses.monitoring],
+      ["Maintenance", data.operatingExpenses.maintenance],
+      ["Legal & Permitting", data.operatingExpenses.legal],
+      ["Labor", data.operatingExpenses.labor],
+      ["Overhead", data.operatingExpenses.overhead],
+      ["Other", data.operatingExpenses.other],
+      ["Total Operating Expenses", data.operatingExpenses.totalOperatingExpenses],
+      ["EBITDA", data.ebitda],
+      [],
+      ["OTHER INCOME/EXPENSES"],
+      ["Grant Income", data.otherIncome.grantIncome],
+      ["Interest Expense", data.otherIncome.interestExpense],
+      ["Total Other Income", data.otherIncome.totalOther],
+      [],
+      ["NET INCOME", data.netIncome],
+      ["Net Profit Margin %", data.netMargin],
+    ];
+    
+    const csv = csvData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `income-statement-${format(startDate, "yyyy-MM-dd")}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    const wsData = [
+      ["Income Statement", `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`],
+      [],
+      ["REVENUE"],
+      ["Carbon Credit Sales", data.revenue.carbonSales],
+      ["BNG Unit Sales", data.revenue.bngSales],
+      ["Watercourse Unit Sales", data.revenue.watercourseSales],
+      ["NFM Credit Sales", data.revenue.nfmSales],
+      ["Other Revenue", data.revenue.otherRevenue],
+      ["Total Revenue", data.revenue.totalRevenue],
+      [],
+      ["COST OF GOODS SOLD"],
+      ["Site Preparation", data.cogs.sitePreparation],
+      ["Planting", data.cogs.planting],
+      ["Fencing", data.cogs.fencing],
+      ["Initial Surveys", data.cogs.surveys],
+      ["Total COGS", data.cogs.totalCOGS],
+      ["Gross Profit", data.grossProfit],
+      ["Gross Margin %", data.grossMargin],
+      [],
+      ["OPERATING EXPENSES"],
+      ["Monitoring", data.operatingExpenses.monitoring],
+      ["Maintenance", data.operatingExpenses.maintenance],
+      ["Legal & Permitting", data.operatingExpenses.legal],
+      ["Labor", data.operatingExpenses.labor],
+      ["Overhead", data.operatingExpenses.overhead],
+      ["Other", data.operatingExpenses.other],
+      ["Total Operating Expenses", data.operatingExpenses.totalOperatingExpenses],
+      ["EBITDA", data.ebitda],
+      [],
+      ["OTHER INCOME/EXPENSES"],
+      ["Grant Income", data.otherIncome.grantIncome],
+      ["Interest Expense", data.otherIncome.interestExpense],
+      ["Total Other Income", data.otherIncome.totalOther],
+      [],
+      ["NET INCOME", data.netIncome],
+      ["Net Profit Margin %", data.netMargin],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Income Statement");
+    XLSX.writeFile(wb, `income-statement-${format(startDate, "yyyy-MM-dd")}.xlsx`);
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Income Statement</CardTitle>
-          <p className="text-sm text-slate-500">
-            {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
-          </p>
+          <div>
+            <CardTitle>Income Statement</CardTitle>
+            <p className="text-sm text-slate-500 mt-1">
+              {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
+              <Download className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

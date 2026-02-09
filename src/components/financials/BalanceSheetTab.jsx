@@ -2,9 +2,11 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { format } from "date-fns";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function BalanceSheetTab({ data, asOfDate }) {
   if (!data) {
@@ -16,6 +18,106 @@ export default function BalanceSheetTab({ data, asOfDate }) {
       </Card>
     );
   }
+
+  const exportToCSV = () => {
+    const csvData = [
+      ["Balance Sheet", `As of ${format(asOfDate, "MMM d, yyyy")}`],
+      [],
+      ["ASSETS"],
+      ["Current Assets"],
+      ["Cash and Cash Equivalents", data.assets.currentAssets.cash],
+      ["Accounts Receivable", data.assets.currentAssets.accountsReceivable],
+      ["Work in Progress", data.assets.currentAssets.workInProgress],
+      ["Credit Inventory - Carbon", data.assets.currentAssets.creditInventory.carbon],
+      ["Credit Inventory - BNG Habitat", data.assets.currentAssets.creditInventory.bngHabitat],
+      ["Credit Inventory - BNG Hedgerow", data.assets.currentAssets.creditInventory.bngHedgerow],
+      ["Credit Inventory - Watercourse", data.assets.currentAssets.creditInventory.watercourse],
+      ["Credit Inventory - NFM", data.assets.currentAssets.creditInventory.nfm],
+      ["Total Current Assets", data.assets.currentAssets.totalCurrentAssets],
+      ["Fixed Assets"],
+      ["Land Value", data.assets.fixedAssets.land],
+      ["Equipment", data.assets.fixedAssets.equipment],
+      ["Total Fixed Assets", data.assets.fixedAssets.totalFixedAssets],
+      ["TOTAL ASSETS", data.assets.totalAssets],
+      [],
+      ["LIABILITIES"],
+      ["Current Liabilities"],
+      ["Accounts Payable", data.liabilities.currentLiabilities.accountsPayable],
+      ["Current Portion of Debt", data.liabilities.currentLiabilities.currentDebt],
+      ["Deferred Revenue", data.liabilities.currentLiabilities.deferredRevenue],
+      ["Total Current Liabilities", data.liabilities.currentLiabilities.totalCurrentLiabilities],
+      ["Long-Term Liabilities"],
+      ["Private Debt", data.liabilities.longTermLiabilities.privateDebt],
+      ["Government Debt", data.liabilities.longTermLiabilities.governmentDebt],
+      ["Total Long-Term Liabilities", data.liabilities.longTermLiabilities.totalLongTermLiabilities],
+      ["TOTAL LIABILITIES", data.liabilities.totalLiabilities],
+      [],
+      ["EQUITY"],
+      ["Equity Capital", data.equity.equityCapital],
+      ["Grant Funding", data.equity.grantFunding],
+      ["Retained Earnings", data.equity.retainedEarnings],
+      ["TOTAL EQUITY", data.equity.totalEquity],
+      [],
+      ["TOTAL LIABILITIES + EQUITY", data.totalLiabilitiesAndEquity],
+    ];
+    
+    const csv = csvData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `balance-sheet-${format(asOfDate, "yyyy-MM-dd")}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    const wsData = [
+      ["Balance Sheet", `As of ${format(asOfDate, "MMM d, yyyy")}`],
+      [],
+      ["ASSETS"],
+      ["Current Assets"],
+      ["Cash and Cash Equivalents", data.assets.currentAssets.cash],
+      ["Accounts Receivable", data.assets.currentAssets.accountsReceivable],
+      ["Work in Progress", data.assets.currentAssets.workInProgress],
+      ["Credit Inventory - Carbon", data.assets.currentAssets.creditInventory.carbon],
+      ["Credit Inventory - BNG Habitat", data.assets.currentAssets.creditInventory.bngHabitat],
+      ["Credit Inventory - BNG Hedgerow", data.assets.currentAssets.creditInventory.bngHedgerow],
+      ["Credit Inventory - Watercourse", data.assets.currentAssets.creditInventory.watercourse],
+      ["Credit Inventory - NFM", data.assets.currentAssets.creditInventory.nfm],
+      ["Total Current Assets", data.assets.currentAssets.totalCurrentAssets],
+      ["Fixed Assets"],
+      ["Land Value", data.assets.fixedAssets.land],
+      ["Equipment", data.assets.fixedAssets.equipment],
+      ["Total Fixed Assets", data.assets.fixedAssets.totalFixedAssets],
+      ["TOTAL ASSETS", data.assets.totalAssets],
+      [],
+      ["LIABILITIES"],
+      ["Current Liabilities"],
+      ["Accounts Payable", data.liabilities.currentLiabilities.accountsPayable],
+      ["Current Portion of Debt", data.liabilities.currentLiabilities.currentDebt],
+      ["Deferred Revenue", data.liabilities.currentLiabilities.deferredRevenue],
+      ["Total Current Liabilities", data.liabilities.currentLiabilities.totalCurrentLiabilities],
+      ["Long-Term Liabilities"],
+      ["Private Debt", data.liabilities.longTermLiabilities.privateDebt],
+      ["Government Debt", data.liabilities.longTermLiabilities.governmentDebt],
+      ["Total Long-Term Liabilities", data.liabilities.longTermLiabilities.totalLongTermLiabilities],
+      ["TOTAL LIABILITIES", data.liabilities.totalLiabilities],
+      [],
+      ["EQUITY"],
+      ["Equity Capital", data.equity.equityCapital],
+      ["Grant Funding", data.equity.grantFunding],
+      ["Retained Earnings", data.equity.retainedEarnings],
+      ["TOTAL EQUITY", data.equity.totalEquity],
+      [],
+      ["TOTAL LIABILITIES + EQUITY", data.totalLiabilitiesAndEquity],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Balance Sheet");
+    XLSX.writeFile(wb, `balance-sheet-${format(asOfDate, "yyyy-MM-dd")}.xlsx`);
+  };
 
   return (
     <div className="space-y-4">
@@ -40,8 +142,20 @@ export default function BalanceSheetTab({ data, asOfDate }) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Balance Sheet</CardTitle>
-            <p className="text-sm text-slate-500">As of {format(asOfDate, "MMM d, yyyy")}</p>
+            <div>
+              <CardTitle>Balance Sheet</CardTitle>
+              <p className="text-sm text-slate-500 mt-1">As of {format(asOfDate, "MMM d, yyyy")}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToExcel}>
+                <Download className="h-4 w-4 mr-2" />
+                Excel
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
