@@ -233,12 +233,20 @@ export default function AdminUsers() {
                                 View Details
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Login As</DropdownMenuItem>
-                            <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => alert('Login As feature coming soon')}>
+                              Login As
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => alert('Reset Password feature coming soon')}>
+                              Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => alert('Super Admin toggle feature coming soon')}>
                               {user.is_super_admin ? "Remove Super Admin" : "Make Super Admin"}
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem className="text-red-600" onSelect={() => {
+                              if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {
+                                alert('Delete feature coming soon');
+                              }
+                            }}>
                               Delete User
                             </DropdownMenuItem>
                           </DropdownMenuContent>
