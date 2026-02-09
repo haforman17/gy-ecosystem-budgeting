@@ -226,10 +226,10 @@ export default function YearlyForecastTab({ projectId, project }) {
     const currentYear = new Date().getFullYear();
     const yearsArray = [];
     
-    for (let year = startYear; year <= currentYear; year++) {
+    for (let calendarYear = startYear; calendarYear <= currentYear; calendarYear++) {
       const yearTransactions = transactions.filter((t) => {
         const tYear = new Date(t.date).getFullYear();
-        return tYear === year;
+        return tYear === calendarYear;
       });
 
       const revenue = yearTransactions
@@ -245,7 +245,7 @@ export default function YearlyForecastTab({ projectId, project }) {
         .reduce((sum, t) => sum + t.amount, 0);
 
       yearsArray.push({
-        year: year,
+        calendarYear: calendarYear,
         actualRevenue: revenue,
         actualExpenses: expenses,
         actualFunding: funding,
@@ -256,10 +256,15 @@ export default function YearlyForecastTab({ projectId, project }) {
     return yearsArray;
   }, [transactions, project]);
 
-  // Combine forecast and actuals
+  // Combine forecast and actuals - add calendar year to forecast data
   const combinedData = React.useMemo(() => {
+    if (!project) return [];
+    
+    const startYear = new Date(project.start_date).getFullYear();
+    
     return forecastData.map((forecast) => {
-      const actual = yearlyActuals.find((a) => a.year === forecast.year) || {
+      const calendarYear = startYear + (forecast.year - 1);
+      const actual = yearlyActuals.find((a) => a.calendarYear === calendarYear) || {
         actualRevenue: 0,
         actualExpenses: 0,
         actualFunding: 0,
@@ -268,13 +273,14 @@ export default function YearlyForecastTab({ projectId, project }) {
       
       return {
         ...forecast,
+        calendarYear: calendarYear,
         ...actual,
         varianceRevenue: actual.actualRevenue - (forecast.projected_revenue || 0),
         varianceExpenses: actual.actualExpenses - (forecast.projected_expenses || 0),
         varianceNetCashFlow: actual.actualNetCashFlow - (forecast.projected_cash_flow || 0),
       };
     });
-  }, [forecastData, yearlyActuals]);
+  }, [forecastData, yearlyActuals, project]);
 
   const totals = React.useMemo(() => {
     const revenue = forecastData.reduce((sum, p) => sum + (p.projected_revenue || 0), 0);
@@ -484,9 +490,9 @@ export default function YearlyForecastTab({ projectId, project }) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {combinedData.slice(0, 10).map((item, idx) => (
+                    {combinedData.map((item, idx) => (
                       <TableRow key={idx} className="hover:bg-slate-50">
-                        <TableCell className="font-medium">{item.year}</TableCell>
+                        <TableCell className="font-medium">{item.calendarYear}</TableCell>
                         <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_revenue || 0)}</TableCell>
                         <TableCell className="text-right text-emerald-600 font-medium">
                           {formatCurrency(item.actualRevenue || 0)}
