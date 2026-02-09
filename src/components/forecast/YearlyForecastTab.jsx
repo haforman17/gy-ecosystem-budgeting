@@ -215,7 +215,14 @@ export default function YearlyForecastTab({ projectId, project }) {
       periods = generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
     }
 
-    return periods.sort((a, b) => (a.year || 0) - (b.year || 0));
+    const startYear = new Date(project.start_date).getFullYear();
+    
+    return periods
+      .sort((a, b) => (a.year || 0) - (b.year || 0))
+      .map(p => ({
+        ...p,
+        calendarYear: startYear + (p.year - 1)
+      }));
   }, [project, revenueStreams, lineItems, selectedScenario, years, savedPeriods]);
 
   // Calculate yearly actuals from transactions
