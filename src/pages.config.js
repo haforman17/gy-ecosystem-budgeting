@@ -70,6 +70,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminActivity from './pages/AdminActivity';
 import AdminMessages from './pages/AdminMessages';
 import AdminSettings from './pages/AdminSettings';
+import AdminUserDetail from './pages/AdminUserDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -97,6 +98,7 @@ export const PAGES = {
     "AdminActivity": AdminActivity,
     "AdminMessages": AdminMessages,
     "AdminSettings": AdminSettings,
+    "AdminUserDetail": AdminUserDetail,
 }
 
 export const pagesConfig = {
