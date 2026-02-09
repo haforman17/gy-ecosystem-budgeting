@@ -44,10 +44,11 @@ export default function AdminLayout({ children, currentPageName, breadcrumbs }) 
       try {
         const currentUser = await base44.auth.me();
         
-        if (!currentUser?.is_super_admin) {
-          navigate(createPageUrl("Dashboard"));
-          return;
-        }
+        // TODO: Re-enable super admin check once you have super admin users
+        // if (!currentUser?.is_super_admin) {
+        //   navigate(createPageUrl("Dashboard"));
+        //   return;
+        // }
         
         setUser(currentUser);
       } catch (error) {
