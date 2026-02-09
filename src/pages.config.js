@@ -73,6 +73,7 @@ import Projects from './pages/Projects';
 import ReportGenerate from './pages/ReportGenerate';
 import Reports from './pages/Reports';
 import ProjectQuarterlyForecast from './pages/ProjectQuarterlyForecast';
+import ProjectForecasting from './pages/ProjectForecasting';
 import __Layout from './Layout.jsx';
 
 
@@ -103,6 +104,7 @@ export const PAGES = {
     "ReportGenerate": ReportGenerate,
     "Reports": Reports,
     "ProjectQuarterlyForecast": ProjectQuarterlyForecast,
+    "ProjectForecasting": ProjectForecasting,
 }
 
 export const pagesConfig = {
