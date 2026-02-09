@@ -65,6 +65,11 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminOrganizations from './pages/AdminOrganizations';
+import AdminOrganizationDetail from './pages/AdminOrganizationDetail';
+import AdminUsers from './pages/AdminUsers';
+import AdminActivity from './pages/AdminActivity';
+import AdminMessages from './pages/AdminMessages';
+import AdminSettings from './pages/AdminSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +92,11 @@ export const PAGES = {
     "Contact": Contact,
     "AdminDashboard": AdminDashboard,
     "AdminOrganizations": AdminOrganizations,
+    "AdminOrganizationDetail": AdminOrganizationDetail,
+    "AdminUsers": AdminUsers,
+    "AdminActivity": AdminActivity,
+    "AdminMessages": AdminMessages,
+    "AdminSettings": AdminSettings,
 }
 
 export const pagesConfig = {
