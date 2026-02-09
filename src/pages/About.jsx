@@ -223,7 +223,11 @@ export default function About() {
           <p className="text-xl text-slate-800 mb-8">
             Help restore nature with better financial management
           </p>
-          <Button size="lg" className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-12 py-6">
+          <Button 
+            size="lg" 
+            className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-12 py-6"
+            onClick={() => window.location.href = '/signup'}
+          >
             Start Free Trial
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>

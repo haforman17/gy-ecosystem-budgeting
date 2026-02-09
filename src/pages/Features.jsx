@@ -348,7 +348,11 @@ export default function Features() {
             See Great Yellow in Action
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-8 py-6">
+            <Button 
+              size="lg" 
+              className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-8 py-6"
+              onClick={() => window.location.href = '/signup'}
+            >
               Start Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

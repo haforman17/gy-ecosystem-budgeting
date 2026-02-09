@@ -43,7 +43,11 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold text-lg px-8 py-6 shadow-lg">
+                <Button 
+                  size="lg" 
+                  className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold text-lg px-8 py-6 shadow-lg"
+                  onClick={() => window.location.href = '/signup'}
+                >
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -517,7 +521,11 @@ export default function Home() {
           <p className="text-xl text-slate-800 mb-8">
             Join leading restoration projects using Great Yellow to manage millions in environmental credits.
           </p>
-          <Button size="lg" className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-12 py-6 shadow-lg">
+          <Button 
+            size="lg" 
+            className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-12 py-6 shadow-lg"
+            onClick={() => window.location.href = '/signup'}
+          >
             Start Free Trial
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
