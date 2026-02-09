@@ -61,7 +61,7 @@ export default function EditableForecastTable({ forecastData, onUpdatePeriod }) 
 
             return (
               <TableRow key={period.year || idx} className={isEditing ? "bg-blue-50" : ""}>
-                <TableCell className="font-medium">Year {period.year}</TableCell>
+                <TableCell className="font-medium">{period.calendarYear || period.year}</TableCell>
                 
                 <TableCell className="text-right text-emerald-600">
                   {isEditing ? (
