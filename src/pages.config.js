@@ -62,6 +62,9 @@ import Reports from './pages/Reports';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
+import Contact from './pages/Contact';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +84,9 @@ export const PAGES = {
     "Features": Features,
     "Pricing": Pricing,
     "About": About,
+    "Contact": Contact,
+    "ForgotPassword": ForgotPassword,
+    "ResetPassword": ResetPassword,
 }
 
 export const pagesConfig = {
