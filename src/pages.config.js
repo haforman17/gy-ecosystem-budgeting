@@ -63,6 +63,8 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminOrganizations from './pages/AdminOrganizations';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +85,8 @@ export const PAGES = {
     "Pricing": Pricing,
     "About": About,
     "Contact": Contact,
+    "AdminDashboard": AdminDashboard,
+    "AdminOrganizations": AdminOrganizations,
 }
 
 export const pagesConfig = {
