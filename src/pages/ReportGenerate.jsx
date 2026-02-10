@@ -71,17 +71,52 @@ export default function ReportGenerate() {
         generated_by: user?.id,
       });
       
-      // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Update to completed
-      await base44.entities.Report.update(report.id, {
-        status: "COMPLETED",
-        file_url: `https://example.com/reports/${report.id}.pdf`,
-        file_size: Math.floor(Math.random() * 1000000) + 500000,
-      });
-      
-      return report;
+      try {
+        // Generate actual PDF report
+        const { jsPDF } = await import('jspdf');
+        const doc = new jsPDF();
+        
+        // Add report content
+        doc.setFontSize(20);
+        doc.text(reportData.report_name, 20, 20);
+        
+        doc.setFontSize(12);
+        doc.text(`Report Type: ${reportData.report_type}`, 20, 35);
+        doc.text(`Period: ${format(new Date(reportData.period_start), "MMM d, yyyy")} - ${format(new Date(reportData.period_end), "MMM d, yyyy")}`, 20, 45);
+        doc.text(`Generated: ${format(new Date(), "MMM d, yyyy HH:mm")}`, 20, 55);
+        
+        doc.setFontSize(14);
+        doc.text('Report Sections:', 20, 70);
+        
+        let y = 80;
+        Object.entries(reportData.metadata.sections).forEach(([key, included]) => {
+          if (included) {
+            doc.setFontSize(10);
+            doc.text(`• ${key.replace(/([A-Z])/g, ' $1').trim()}`, 30, y);
+            y += 10;
+          }
+        });
+        
+        // Convert to blob and upload
+        const pdfBlob = doc.output('blob');
+        const file = new File([pdfBlob], `${reportData.report_name}.pdf`, { type: 'application/pdf' });
+        
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        
+        // Update to completed
+        await base44.entities.Report.update(report.id, {
+          status: "COMPLETED",
+          file_url: file_url,
+          file_size: pdfBlob.size,
+        });
+        
+        return report;
+      } catch (error) {
+        await base44.entities.Report.update(report.id, {
+          status: "FAILED",
+        });
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
