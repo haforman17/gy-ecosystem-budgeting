@@ -2,7 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
-import { Leaf } from "lucide-react";
+import { Leaf, LogIn } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 export default function PublicLayout({ children }) {
   return (
@@ -25,6 +26,13 @@ export default function PublicLayout({ children }) {
               <Link to={createPageUrl("Features")}>
                 <Button variant="ghost">Features</Button>
               </Link>
+              <Button 
+                onClick={() => base44.auth.redirectToLogin(createPageUrl("Dashboard"))}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
             </div>
           </div>
         </div>
