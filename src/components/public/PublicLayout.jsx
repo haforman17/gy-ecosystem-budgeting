@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { Button } from "@/components/ui/button";
 import { Leaf } from "lucide-react";
 
 export default function PublicLayout({ children }) {
@@ -16,6 +17,15 @@ export default function PublicLayout({ children }) {
               </div>
               <span className="font-bold text-slate-900">NBS Budget</span>
             </Link>
+            
+            <div className="flex items-center gap-4">
+              <Link to={createPageUrl("Home")}>
+                <Button variant="ghost">Home</Button>
+              </Link>
+              <Link to={createPageUrl("Features")}>
+                <Button variant="ghost">Features</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
