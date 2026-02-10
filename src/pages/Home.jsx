@@ -42,23 +42,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  size="lg" 
-                  className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold text-lg px-8 py-6 shadow-lg"
-                  onClick={() => window.location.href = '/signup'}
-                >
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                  Watch Demo
-                </Button>
-              </div>
 
-              <p className="text-sm text-slate-500">
-                14-day free trial • No credit card required
-              </p>
             </div>
 
             <div className="relative">
@@ -493,28 +477,7 @@ export default function Home() {
 
 
 
-      {/* Final CTA */}
-      <section className="py-20 lg:py-32 bg-gradient-to-br from-yellow-400 to-yellow-500">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
-            Start Managing Your Nature-Based Project Today
-          </h2>
-          <p className="text-xl text-slate-800 mb-8">
-            Join leading restoration projects using Great Yellow to manage millions in environmental credits.
-          </p>
-          <Button 
-            size="lg" 
-            className="bg-white hover:bg-slate-100 text-slate-900 font-semibold text-lg px-12 py-6 shadow-lg"
-            onClick={() => window.location.href = '/signup'}
-          >
-            Start Free Trial
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-          <p className="text-sm text-slate-700 mt-6">
-            No credit card required • Full access for 14 days
-          </p>
-        </div>
-      </section>
+
     </PublicLayout>
   );
 }
