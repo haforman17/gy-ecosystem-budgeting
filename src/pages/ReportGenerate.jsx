@@ -72,31 +72,255 @@ export default function ReportGenerate() {
       });
       
       try {
-        // Generate actual PDF report
+        // Fetch all project data
+        const [project, transactions, revenueStreams, lineItems, fundingSources] = await Promise.all([
+          base44.entities.Project.get(reportData.project_id),
+          base44.entities.Transaction.filter({ project_id: reportData.project_id }),
+          base44.entities.RevenueStream.filter({ project_id: reportData.project_id }),
+          base44.entities.LineItem.filter({ project_id: reportData.project_id }),
+          base44.entities.FundingSource.filter({ project_id: reportData.project_id }),
+        ]);
+
+        // Filter transactions by report period
+        const periodTransactions = transactions.filter(t => {
+          const tDate = new Date(t.date);
+          return tDate >= new Date(reportData.period_start) && tDate <= new Date(reportData.period_end);
+        });
+
+        // Calculate financial metrics
+        const totalRevenue = periodTransactions
+          .filter(t => t.transaction_type === 'REVENUE')
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const totalExpenses = periodTransactions
+          .filter(t => t.transaction_type === 'EXPENSE')
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const netCashFlow = totalRevenue - totalExpenses;
+        
+        const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+        const totalActual = lineItems.reduce((sum, li) => sum + (li.actual_amount || 0), 0);
+        const budgetVariance = totalActual - totalBudget;
+        
+        const totalFunding = fundingSources.reduce((sum, f) => sum + (f.total_amount || 0), 0);
+        const totalDrawn = fundingSources.reduce((sum, f) => sum + (f.drawn_amount || 0), 0);
+
+        // Generate PDF
         const { jsPDF } = await import('jspdf');
         const doc = new jsPDF();
+        let yPos = 20;
+
+        // Title Page
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.text(reportData.report_name, 105, yPos, { align: 'center' });
         
-        // Add report content
-        doc.setFontSize(20);
-        doc.text(reportData.report_name, 20, 20);
-        
-        doc.setFontSize(12);
-        doc.text(`Report Type: ${reportData.report_type}`, 20, 35);
-        doc.text(`Period: ${format(new Date(reportData.period_start), "MMM d, yyyy")} - ${format(new Date(reportData.period_end), "MMM d, yyyy")}`, 20, 45);
-        doc.text(`Generated: ${format(new Date(), "MMM d, yyyy HH:mm")}`, 20, 55);
-        
+        yPos += 15;
         doc.setFontSize(14);
-        doc.text('Report Sections:', 20, 70);
+        doc.setFont(undefined, 'normal');
+        doc.text(project.name, 105, yPos, { align: 'center' });
         
-        let y = 80;
-        Object.entries(reportData.metadata.sections).forEach(([key, included]) => {
-          if (included) {
-            doc.setFontSize(10);
-            doc.text(`• ${key.replace(/([A-Z])/g, ' $1').trim()}`, 30, y);
-            y += 10;
-          }
-        });
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.text(`${format(new Date(reportData.period_start), "MMMM d, yyyy")} - ${format(new Date(reportData.period_end), "MMMM d, yyyy")}`, 105, yPos, { align: 'center' });
         
+        yPos += 5;
+        doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy")}`, 105, yPos, { align: 'center' });
+
+        // Executive Summary
+        if (reportData.metadata.sections.executiveSummary) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('Executive Summary', 20, yPos);
+          
+          yPos += 10;
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          
+          const summaryText = [
+            `This report covers the financial performance of ${project.name} for the period`,
+            `${format(new Date(reportData.period_start), "MMMM d, yyyy")} to ${format(new Date(reportData.period_end), "MMMM d, yyyy")}.`,
+            '',
+            `Key Highlights:`,
+            `• Total Revenue: £${totalRevenue.toLocaleString()}`,
+            `• Total Expenses: £${totalExpenses.toLocaleString()}`,
+            `• Net Cash Flow: £${netCashFlow.toLocaleString()} (${netCashFlow >= 0 ? 'positive' : 'negative'})`,
+            `• Project Status: ${project.status}`,
+            `• Total Funding Secured: £${totalFunding.toLocaleString()}`,
+            `• Funding Drawn: £${totalDrawn.toLocaleString()} (${((totalDrawn/totalFunding)*100).toFixed(1)}%)`,
+          ];
+          
+          summaryText.forEach(line => {
+            doc.text(line, 20, yPos);
+            yPos += 6;
+          });
+        }
+
+        // Financial Statements
+        if (reportData.metadata.sections.financialStatements) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('Financial Statements', 20, yPos);
+          
+          // Income Statement
+          yPos += 12;
+          doc.setFontSize(12);
+          doc.text('Income Statement', 20, yPos);
+          
+          yPos += 8;
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          
+          // Draw table headers
+          doc.setFont(undefined, 'bold');
+          doc.text('Description', 20, yPos);
+          doc.text('Amount (£)', 150, yPos, { align: 'right' });
+          yPos += 2;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 6;
+          
+          doc.setFont(undefined, 'normal');
+          doc.text('Revenue', 20, yPos);
+          doc.text(totalRevenue.toLocaleString(), 150, yPos, { align: 'right' });
+          yPos += 6;
+          
+          doc.text('Operating Expenses', 20, yPos);
+          doc.text(totalExpenses.toLocaleString(), 150, yPos, { align: 'right' });
+          yPos += 2;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 6;
+          
+          doc.setFont(undefined, 'bold');
+          doc.text('Net Income', 20, yPos);
+          doc.text(netCashFlow.toLocaleString(), 150, yPos, { align: 'right' });
+        }
+
+        // Budget vs Actual
+        if (reportData.metadata.sections.budgetVsActual) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('Budget vs Actual Analysis', 20, yPos);
+          
+          yPos += 12;
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          
+          doc.text(`Total Budget: £${totalBudget.toLocaleString()}`, 20, yPos);
+          yPos += 6;
+          doc.text(`Actual Spend: £${totalActual.toLocaleString()}`, 20, yPos);
+          yPos += 6;
+          doc.text(`Variance: £${budgetVariance.toLocaleString()} (${((budgetVariance/totalBudget)*100).toFixed(1)}%)`, 20, yPos);
+          
+          yPos += 12;
+          doc.setFont(undefined, 'bold');
+          doc.text('Category', 20, yPos);
+          doc.text('Budget', 90, yPos, { align: 'right' });
+          doc.text('Actual', 130, yPos, { align: 'right' });
+          doc.text('Variance', 170, yPos, { align: 'right' });
+          yPos += 2;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 6;
+          
+          doc.setFont(undefined, 'normal');
+          lineItems.slice(0, 20).forEach(item => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            const variance = (item.actual_amount || 0) - (item.budget_amount || 0);
+            doc.text(item.category, 20, yPos);
+            doc.text((item.budget_amount || 0).toLocaleString(), 90, yPos, { align: 'right' });
+            doc.text((item.actual_amount || 0).toLocaleString(), 130, yPos, { align: 'right' });
+            doc.text(variance.toLocaleString(), 170, yPos, { align: 'right' });
+            yPos += 6;
+          });
+        }
+
+        // Credit Generation
+        if (reportData.metadata.sections.creditGeneration) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('Environmental Credit Generation', 20, yPos);
+          
+          yPos += 12;
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          
+          const creditTypes = {
+            CARBON: 'Carbon Credits (tCO2e)',
+            BNG_HABITAT: 'BNG Habitat Units',
+            BNG_HEDGEROW: 'BNG Hedgerow Units',
+            WATERCOURSE: 'Watercourse Units',
+            NFM: 'Natural Flood Management Credits'
+          };
+          
+          doc.setFont(undefined, 'bold');
+          doc.text('Credit Type', 20, yPos);
+          doc.text('Estimated', 100, yPos, { align: 'right' });
+          doc.text('Verified', 140, yPos, { align: 'right' });
+          doc.text('Revenue', 180, yPos, { align: 'right' });
+          yPos += 2;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 6;
+          
+          doc.setFont(undefined, 'normal');
+          Object.entries(creditTypes).forEach(([key, label]) => {
+            const streams = revenueStreams.filter(r => r.credit_type === key);
+            const totalEstimated = streams.reduce((sum, s) => sum + (s.estimated_volume || 0), 0);
+            const totalActual = streams.reduce((sum, s) => sum + (s.actual_volume || 0), 0);
+            const totalRevenue = streams.reduce((sum, s) => sum + (s.actual_revenue || 0), 0);
+            
+            if (totalEstimated > 0 || totalActual > 0) {
+              doc.text(label, 20, yPos);
+              doc.text(totalEstimated.toLocaleString(), 100, yPos, { align: 'right' });
+              doc.text(totalActual.toLocaleString(), 140, yPos, { align: 'right' });
+              doc.text(`£${totalRevenue.toLocaleString()}`, 180, yPos, { align: 'right' });
+              yPos += 6;
+            }
+          });
+        }
+
+        // Transaction Details
+        if (reportData.metadata.sections.transactionDetails) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('Transaction Details', 20, yPos);
+          
+          yPos += 12;
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'bold');
+          doc.text('Date', 20, yPos);
+          doc.text('Description', 50, yPos);
+          doc.text('Type', 120, yPos);
+          doc.text('Amount', 170, yPos, { align: 'right' });
+          yPos += 2;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 6;
+          
+          doc.setFont(undefined, 'normal');
+          periodTransactions.slice(0, 50).forEach(txn => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            doc.text(format(new Date(txn.date), "MMM d, yyyy"), 20, yPos);
+            doc.text(txn.description.substring(0, 30), 50, yPos);
+            doc.text(txn.transaction_type, 120, yPos);
+            doc.text(`£${txn.amount.toLocaleString()}`, 170, yPos, { align: 'right' });
+            yPos += 5;
+          });
+        }
+
         // Convert to blob and upload
         const pdfBlob = doc.output('blob');
         const file = new File([pdfBlob], `${reportData.report_name}.pdf`, { type: 'application/pdf' });
