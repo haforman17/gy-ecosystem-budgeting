@@ -491,26 +491,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Teaser */}
-      <section className="py-20 lg:py-32 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-            Plans for Projects of All Sizes
-          </h2>
-          <p className="text-lg text-slate-600 mb-8">
-            14-day free trial • No credit card required • Cancel anytime
-          </p>
-          <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
-            <Link to="/pricing">
-              View Pricing
-              <ChevronRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-          <p className="text-sm text-slate-500 mt-6">
-            30-day money-back guarantee
-          </p>
-        </div>
-      </section>
+
 
       {/* Final CTA */}
       <section className="py-20 lg:py-32 bg-gradient-to-br from-yellow-400 to-yellow-500">
