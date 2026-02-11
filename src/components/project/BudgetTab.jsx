@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "../shared/CurrencyFormat";
 import { getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
-import ConfirmDialog from "../shared/ConfirmDialog";
 import { Plus, FileText, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -21,7 +20,6 @@ const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#d97706"
 export default function BudgetTab({ projectId, lineItems }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
   const [selectedLineItem, setSelectedLineItem] = useState(null);
   const queryClient = useQueryClient();
 
@@ -56,7 +54,6 @@ export default function BudgetTab({ projectId, lineItems }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
       toast.success("Line item deleted");
-      setDeleteId(null);
     },
     onError: (error) => {
       toast.error("Failed to delete line item");
@@ -153,7 +150,7 @@ export default function BudgetTab({ projectId, lineItems }) {
                                 <DropdownMenuItem onClick={() => setEditItem(li)}>
                                   <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setDeleteId(li.id)} className="text-red-600">
+                                <DropdownMenuItem onClick={() => deleteMutation.mutate(li.id)} className="text-red-600">
                                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -245,15 +242,6 @@ export default function BudgetTab({ projectId, lineItems }) {
       {editItem && (
         <LineItemFormModal projectId={projectId} item={editItem} onClose={() => setEditItem(null)} />
       )}
-
-      <ConfirmDialog
-        open={!!deleteId}
-        onOpenChange={() => setDeleteId(null)}
-        title="Delete Line Item"
-        description="Are you sure? This action cannot be undone."
-        onConfirm={() => deleteMutation.mutate(deleteId)}
-        destructive
-      />
 
       {selectedLineItem && (
         <TransactionsModal
