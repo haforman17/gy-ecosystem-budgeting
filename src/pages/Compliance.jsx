@@ -50,13 +50,6 @@ export default function Compliance() {
     },
   });
 
-  const deleteItemMutation = useMutation({
-    mutationFn: (id) => base44.entities.ComplianceItem.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["complianceItems"] });
-    },
-  });
-
   const getStatusColor = (status) => {
     const colors = {
       UPCOMING: "bg-blue-100 text-blue-800",

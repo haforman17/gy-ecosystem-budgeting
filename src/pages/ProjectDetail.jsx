@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectHeader from "../components/project/ProjectHeader";
 import OverviewTab from "../components/project/OverviewTab";
@@ -10,16 +10,12 @@ import BudgetTab from "../components/project/BudgetTab";
 import RevenueTab from "../components/project/RevenueTab";
 import FundingTab from "../components/project/FundingTab";
 import TransactionsTab from "../components/project/TransactionsTab";
-import ConfirmDialog from "../components/shared/ConfirmDialog";
 import LoadingState from "../components/shared/LoadingState";
-import { toast } from "sonner";
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: project, isLoading: loadingProject } = useQuery({
@@ -55,22 +51,6 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      // Delete all related entities first
-      await Promise.all(transactions.map((t) => base44.entities.Transaction.delete(t.id)));
-      await Promise.all(lineItems.map((li) => base44.entities.LineItem.delete(li.id)));
-      await Promise.all(revenueStreams.map((rs) => base44.entities.RevenueStream.delete(rs.id)));
-      await Promise.all(fundingSources.map((fs) => base44.entities.FundingSource.delete(fs.id)));
-      await base44.entities.Project.delete(projectId);
-    },
-    onSuccess: () => {
-      toast.success("Project deleted");
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      navigate(createPageUrl("Projects"));
-    },
-  });
-
   const isLoading = loadingProject || loadingLI || loadingRS || loadingFS || loadingTx;
 
   if (isLoading) return <LoadingState message="Loading project..." />;
@@ -87,7 +67,6 @@ export default function ProjectDetail() {
       <ProjectHeader
         project={project}
         onEdit={() => navigate(createPageUrl(`ProjectEdit?id=${projectId}`))}
-        onDelete={() => setShowDeleteDialog(true)}
         onFinancials={() => navigate(createPageUrl(`ProjectFinancials?id=${projectId}`))}
         onForecast={() => navigate(createPageUrl(`ProjectForecasting?id=${projectId}`))}
       />
@@ -132,15 +111,6 @@ export default function ProjectDetail() {
           />
         </TabsContent>
       </Tabs>
-
-      <ConfirmDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        title="Delete Project"
-        description="This will permanently delete the project and all associated data. This cannot be undone."
-        onConfirm={() => deleteMutation.mutate()}
-        destructive
-      />
     </div>
   );
 }

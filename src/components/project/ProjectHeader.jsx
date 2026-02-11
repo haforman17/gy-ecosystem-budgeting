@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
-import { ArrowLeft, MapPin, Calendar as CalendarIcon, Ruler, Pencil, Trash2, FileText, TrendingUp } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar as CalendarIcon, Ruler, Pencil, FileText, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 
-export default function ProjectHeader({ project, onEdit, onDelete, onFinancials, onForecast }) {
+export default function ProjectHeader({ project, onEdit, onFinancials, onForecast }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -48,9 +48,6 @@ export default function ProjectHeader({ project, onEdit, onDelete, onFinancials,
               )}
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
-              </Button>
-              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600" onClick={onDelete}>
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
               </Button>
             </div>
           </div>
