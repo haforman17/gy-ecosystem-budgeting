@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectHeader from "../components/project/ProjectHeader";
 import OverviewTab from "../components/project/OverviewTab";
 import BudgetTab from "../components/project/BudgetTab";
-import BudgetBuilderTab from "../components/budget/BudgetBuilderTab";
 import RevenueTab from "../components/project/RevenueTab";
 import FundingTab from "../components/project/FundingTab";
 import TransactionsTab from "../components/project/TransactionsTab";
@@ -97,7 +96,6 @@ export default function ProjectDetail() {
         <TabsList className="bg-slate-100/60">
           <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
           <TabsTrigger value="budget" className="text-xs sm:text-sm">Budget</TabsTrigger>
-          <TabsTrigger value="builder" className="text-xs sm:text-sm">Budget Builder</TabsTrigger>
           <TabsTrigger value="revenue" className="text-xs sm:text-sm">Revenue</TabsTrigger>
           <TabsTrigger value="funding" className="text-xs sm:text-sm">Funding</TabsTrigger>
           <TabsTrigger value="transactions" className="text-xs sm:text-sm">Transactions</TabsTrigger>
@@ -114,10 +112,6 @@ export default function ProjectDetail() {
 
         <TabsContent value="budget" className="mt-6">
           <BudgetTab projectId={projectId} lineItems={lineItems} />
-        </TabsContent>
-
-        <TabsContent value="builder" className="mt-6">
-          <BudgetBuilderTab projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="revenue" className="mt-6">

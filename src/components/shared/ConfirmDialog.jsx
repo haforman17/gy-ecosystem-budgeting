@@ -12,20 +12,18 @@ import {
 
 export default function ConfirmDialog({ open, onOpenChange, title, description, onConfirm, destructive = false }) {
   const [showFinalWarning, setShowFinalWarning] = useState(false);
-  
   const handleFirstConfirm = () => {
     if (destructive) {
       setShowFinalWarning(true);
     } else {
       onConfirm();
-      onOpenChange(false);
     }
   };
 
   const handleFinalConfirm = () => {
     setShowFinalWarning(false);
-    onConfirm();
     onOpenChange(false);
+    onConfirm();
   };
 
   const handleCancel = () => {
