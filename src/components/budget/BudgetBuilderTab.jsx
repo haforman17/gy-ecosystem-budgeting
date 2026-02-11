@@ -236,7 +236,10 @@ export default function BudgetBuilderTab({ projectId }) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete("category", category)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete("category", category);
+                          }}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -301,7 +304,10 @@ export default function BudgetBuilderTab({ projectId }) {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleDelete("lineItem", lineItem)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete("lineItem", lineItem);
+                                      }}
                                     >
                                       <Trash2 className="h-3 w-3 text-red-500" />
                                     </Button>
@@ -350,7 +356,10 @@ export default function BudgetBuilderTab({ projectId }) {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleDelete("subItem", subItem)}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDelete("subItem", subItem);
+                                                }}
                                               >
                                                 <Trash2 className="h-3 w-3 text-red-500" />
                                               </Button>
