@@ -1,19 +1,17 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
-import ConfirmDialog from "../shared/ConfirmDialog";
-import { Plus, Trash2, Droplets, MoreVertical, Pencil } from "lucide-react";
+import { Plus, Droplets, MoreVertical, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 import RevenueFormModal from "./RevenueFormModal";
 import TransactionsModal from "./TransactionsModal";
-import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#d97706"];
@@ -21,9 +19,7 @@ const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#d97706"];
 export default function RevenueTab({ projectId, revenueStreams }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
   const [selectedRevenue, setSelectedRevenue] = useState(null);
-  const queryClient = useQueryClient();
 
   // Fetch transactions to calculate real values
   const { data: transactions = [] } = useQuery({
@@ -61,21 +57,6 @@ export default function RevenueTab({ projectId, revenueStreams }) {
     });
     return calcs;
   }, [transactions, revenueStreams]);
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      await base44.entities.RevenueStream.delete(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
-      toast.success("Revenue stream deleted");
-      setDeleteId(null);
-    },
-    onError: (error) => {
-      toast.error("Failed to delete revenue stream");
-      console.error(error);
-    },
-  });
 
   // Chart data by credit type - Estimated Revenue
   const typeData = {};
@@ -201,9 +182,6 @@ export default function RevenueTab({ projectId, revenueStreams }) {
                               <DropdownMenuItem onClick={() => setEditItem(rs)}>
                                 <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setDeleteId(rs.id)} className="text-red-600">
-                                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -291,15 +269,6 @@ export default function RevenueTab({ projectId, revenueStreams }) {
       {showForm && <RevenueFormModal projectId={projectId} onClose={() => setShowForm(false)} />}
 
       {editItem && <RevenueFormModal projectId={projectId} item={editItem} onClose={() => setEditItem(null)} />}
-
-      <ConfirmDialog
-        open={!!deleteId}
-        onOpenChange={() => setDeleteId(null)}
-        title="Delete Revenue Stream"
-        description="Are you sure? This action cannot be undone."
-        onConfirm={() => deleteMutation.mutate(deleteId)}
-        destructive
-      />
 
       {selectedRevenue && (
         <TransactionsModal
