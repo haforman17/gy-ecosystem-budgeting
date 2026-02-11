@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -6,13 +8,17 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "../shared/CurrencyFormat";
 import { StatusBadge } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
-import { Plus, Landmark, MoreVertical, Pencil } from "lucide-react";
+import ConfirmDialog from "../shared/ConfirmDialog";
+import { Plus, Landmark, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import FundingFormModal from "./FundingFormModal";
+import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function FundingTab({ projectId, fundingSources }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const queryClient = useQueryClient();
 
   return (
     <div className="space-y-6">
@@ -81,6 +87,9 @@ export default function FundingTab({ projectId, fundingSources }) {
                               <DropdownMenuItem onClick={() => setEditItem(fs)}>
                                 <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDeleteId(fs.id)} className="text-red-600">
+                                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -97,6 +106,15 @@ export default function FundingTab({ projectId, fundingSources }) {
       {showForm && <FundingFormModal projectId={projectId} onClose={() => setShowForm(false)} />}
 
       {editItem && <FundingFormModal projectId={projectId} item={editItem} onClose={() => setEditItem(null)} />}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Delete Funding Source"
+        description="Are you sure? This action cannot be undone."
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        destructive
+      />
     </div>
   );
 }

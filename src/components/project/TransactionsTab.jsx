@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -6,16 +8,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency } from "../shared/CurrencyFormat";
 import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import EmptyState from "../shared/EmptyState";
-import { Plus, Receipt, Download, MoreVertical, Pencil, FileSpreadsheet, Paperclip } from "lucide-react";
+import ConfirmDialog from "../shared/ConfirmDialog";
+import { Plus, Receipt, Download, MoreVertical, Pencil, FileSpreadsheet, Paperclip, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import TransactionFormModal from "./TransactionFormModal";
+import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function TransactionsTab({ projectId, transactions, lineItems, revenueStreams, fundingSources }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [filterType, setFilterType] = useState("ALL");
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await base44.entities.Transaction.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
+      toast.success("Transaction deleted");
+      setDeleteId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete transaction");
+      console.error(error);
+    },
+  });
 
   const filtered = useMemo(() => {
     let items = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -195,6 +216,9 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                             <DropdownMenuItem onClick={() => setEditItem(tx)}>
                               <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDeleteId(tx.id)} className="text-red-600">
+                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -227,6 +251,15 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
           onClose={() => setEditItem(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Delete Transaction"
+        description="Are you sure? This action cannot be undone."
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        destructive
+      />
     </div>
   );
 }
