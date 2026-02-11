@@ -95,12 +95,14 @@ export default function BudgetBuilderTab({ projectId }) {
   };
 
   const calculateCategoryTotal = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
     const categoryLineItems = getCategoryLineItems(categoryId);
-    return categoryLineItems.reduce((sum, li) => {
+    const lineItemsTotal = categoryLineItems.reduce((sum, li) => {
       const lineItemSubItems = getLineItemSubItems(li.id);
       const subItemTotal = lineItemSubItems.reduce((s, si) => s + (si.budget_amount || 0), 0);
       return sum + (li.budget_amount || 0) + subItemTotal;
     }, 0);
+    return (category?.budget_amount || 0) + lineItemsTotal;
   };
 
   const calculateLineItemTotal = (lineItemId) => {
