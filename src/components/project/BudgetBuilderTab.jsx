@@ -4,8 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "../shared/CurrencyFormat";
-import { Plus, ChevronRight, ChevronDown, MoreVertical, Pencil, Trash2, FolderOpen, Download, Upload } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, MoreVertical, Pencil, Trash2, FolderOpen, Download, Upload, AlertCircle } from "lucide-react";
 import * as XLSX from "xlsx";
+import BudgetDiagnostics from "./BudgetDiagnostics";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import BudgetCategoryForm from "./BudgetCategoryForm";
 import BudgetLineItemForm from "./BudgetLineItemForm";
@@ -23,6 +24,7 @@ export default function BudgetBuilderTab({ projectId }) {
   const [showSubItemForm, setShowSubItemForm] = useState(false);
   const [editingSubItem, setEditingSubItem] = useState(null);
   const [selectedLineItemId, setSelectedLineItemId] = useState(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const fileInputRef = React.useRef(null);
   
   const queryClient = useQueryClient();
@@ -388,6 +390,10 @@ export default function BudgetBuilderTab({ projectId }) {
             <Plus className="h-4 w-4 mr-2" />
             Add Category
           </Button>
+          <Button variant="outline" onClick={() => setShowDiagnostics(true)}>
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Diagnostics
+          </Button>
         </div>
       </div>
 
@@ -732,6 +738,12 @@ export default function BudgetBuilderTab({ projectId }) {
           }}
         />
       )}
+
+      <BudgetDiagnostics
+        projectId={projectId}
+        open={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
+      />
     </div>
   );
 }
