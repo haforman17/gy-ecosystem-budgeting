@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "../shared/CurrencyFormat";
-import { Plus, ChevronRight, ChevronDown, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, MoreVertical, Pencil, Trash2, FolderOpen, Download, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import BudgetCategoryForm from "./BudgetCategoryForm";
 import BudgetLineItemForm from "./BudgetLineItemForm";
@@ -22,6 +23,7 @@ export default function BudgetBuilderTab({ projectId }) {
   const [showSubItemForm, setShowSubItemForm] = useState(false);
   const [editingSubItem, setEditingSubItem] = useState(null);
   const [selectedLineItemId, setSelectedLineItemId] = useState(null);
+  const fileInputRef = React.useRef(null);
   
   const queryClient = useQueryClient();
 
@@ -114,6 +116,137 @@ export default function BudgetBuilderTab({ projectId }) {
 
   const totalBudget = categories.reduce((sum, cat) => sum + calculateCategoryTotal(cat.id), 0);
 
+  const downloadTemplate = () => {
+    const template = [
+      {
+        "Type": "Category",
+        "Tier 1 Category": "Habitat Conversion Costs",
+        "Tier 2 Category": "Broadleaf Woodland creation",
+        "Tier 3 Category": "",
+        "Name": "Example Category",
+        "Description": "Example description",
+        "Budget Amount": 10000,
+        "Month": "January",
+        "Year": "2025",
+        "Parent Category ID": "",
+        "Parent Line Item ID": ""
+      },
+      {
+        "Type": "LineItem",
+        "Tier 1 Category": "Habitat Conversion Costs",
+        "Tier 2 Category": "Broadleaf Woodland creation",
+        "Tier 3 Category": "",
+        "Name": "Example Line Item",
+        "Description": "Example description",
+        "Budget Amount": 5000,
+        "Month": "February",
+        "Year": "2025",
+        "Parent Category ID": "paste-category-id-here",
+        "Parent Line Item ID": ""
+      },
+      {
+        "Type": "SubItem",
+        "Tier 1 Category": "Habitat Conversion Costs",
+        "Tier 2 Category": "Broadleaf Woodland creation",
+        "Tier 3 Category": "",
+        "Name": "Example Sub-item",
+        "Description": "Example description",
+        "Budget Amount": 2000,
+        "Month": "March",
+        "Year": "2025",
+        "Parent Category ID": "",
+        "Parent Line Item ID": "paste-line-item-id-here"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(template);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Budget Template");
+    
+    worksheet['!cols'] = [
+      { wch: 12 }, { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 25 }, 
+      { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 25 }, { wch: 25 }
+    ];
+
+    XLSX.writeFile(workbook, "budget_builder_template.xlsx");
+    toast.success("Template downloaded");
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (jsonData.length === 0) {
+        toast.error("No data found in file");
+        return;
+      }
+
+      let categoriesCreated = 0;
+      let lineItemsCreated = 0;
+      let subItemsCreated = 0;
+
+      for (const row of jsonData) {
+        const type = row["Type"];
+        const commonData = {
+          tier_1_category: row["Tier 1 Category"],
+          tier_2_category: row["Tier 2 Category"] || null,
+          tier_3_category: row["Tier 3 Category"] || null,
+          name: row["Name"],
+          description: row["Description"] || null,
+          budget_amount: parseFloat(row["Budget Amount"]) || 0,
+          month: row["Month"] || null,
+          year: row["Year"]?.toString() || new Date().getFullYear().toString(),
+        };
+
+        if (type === "Category") {
+          await base44.entities.BudgetCategory.create({
+            ...commonData,
+            project_id: projectId,
+          });
+          categoriesCreated++;
+        } else if (type === "LineItem") {
+          const categoryId = row["Parent Category ID"];
+          if (!categoryId) {
+            toast.error(`Line item "${row["Name"]}" is missing Parent Category ID`);
+            continue;
+          }
+          await base44.entities.LineItem.create({
+            ...commonData,
+            project_id: projectId,
+            budget_category_id: categoryId,
+          });
+          lineItemsCreated++;
+        } else if (type === "SubItem") {
+          const lineItemId = row["Parent Line Item ID"];
+          if (!lineItemId) {
+            toast.error(`Sub-item "${row["Name"]}" is missing Parent Line Item ID`);
+            continue;
+          }
+          await base44.entities.SubItem.create({
+            ...commonData,
+            line_item_id: lineItemId,
+          });
+          subItemsCreated++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["subItems", projectId] });
+
+      toast.success(`Imported: ${categoriesCreated} categories, ${lineItemsCreated} line items, ${subItemsCreated} sub-items`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      toast.error(`Import failed: ${error.message}`);
+    }
+  };
+
   // Group categories by Tier 1 Category
   const tier1Groups = categories.reduce((groups, category) => {
     const tier1 = category.tier_1_category || "Uncategorized";
@@ -138,10 +271,27 @@ export default function BudgetBuilderTab({ projectId }) {
           <h2 className="text-xl font-semibold text-slate-900">Budget Builder</h2>
           <p className="text-sm text-slate-500 mt-1">Build hierarchical budgets with categories, line items, and sub-items</p>
         </div>
-        <Button onClick={() => { setEditingCategory(null); setShowCategoryForm(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Category
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Template
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <Button onClick={() => { setEditingCategory(null); setShowCategoryForm(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
+        </div>
       </div>
 
       <Card>
