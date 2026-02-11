@@ -3,12 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronRight, ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, Pencil } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import BudgetCategoryForm from "./BudgetCategoryForm";
 import BudgetLineItemForm from "./BudgetLineItemForm";
 import BudgetSubItemForm from "./BudgetSubItemForm";
-import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
 
 export default function BudgetBuilderTab({ projectId }) {
@@ -21,7 +20,6 @@ export default function BudgetBuilderTab({ projectId }) {
   const [editingItem, setEditingItem] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [selectedLineItemId, setSelectedLineItemId] = useState(null);
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, item: null });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["budgetCategories", projectId],
@@ -39,45 +37,6 @@ export default function BudgetBuilderTab({ projectId }) {
     queryKey: ["budgetSubItems", projectId],
     queryFn: () => base44.entities.BudgetSubItem.filter({ project_id: projectId }, "sort_order"),
     enabled: !!projectId,
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (categoryId) => {
-      const categoryLineItems = lineItems.filter((li) => li.category_id === categoryId);
-      const lineItemIds = categoryLineItems.map((li) => li.id);
-      const categorySubItems = subItems.filter((si) => lineItemIds.includes(si.line_item_id));
-      
-      await Promise.all(categorySubItems.map((si) => base44.entities.BudgetSubItem.delete(si.id)));
-      await Promise.all(categoryLineItems.map((li) => base44.entities.BudgetLineItem.delete(li.id)));
-      await base44.entities.BudgetCategory.delete(categoryId);
-    },
-    onSuccess: () => {
-      toast.success("Category deleted");
-      queryClient.invalidateQueries({ queryKey: ["budgetCategories"] });
-      queryClient.invalidateQueries({ queryKey: ["budgetLineItems"] });
-      queryClient.invalidateQueries({ queryKey: ["budgetSubItems"] });
-    },
-  });
-
-  const deleteLineItemMutation = useMutation({
-    mutationFn: async (lineItemId) => {
-      const lineItemSubItems = subItems.filter((si) => si.line_item_id === lineItemId);
-      await Promise.all(lineItemSubItems.map((si) => base44.entities.BudgetSubItem.delete(si.id)));
-      await base44.entities.BudgetLineItem.delete(lineItemId);
-    },
-    onSuccess: () => {
-      toast.success("Line item deleted");
-      queryClient.invalidateQueries({ queryKey: ["budgetLineItems"] });
-      queryClient.invalidateQueries({ queryKey: ["budgetSubItems"] });
-    },
-  });
-
-  const deleteSubItemMutation = useMutation({
-    mutationFn: (subItemId) => base44.entities.BudgetSubItem.delete(subItemId),
-    onSuccess: () => {
-      toast.success("Sub-item deleted");
-      queryClient.invalidateQueries({ queryKey: ["budgetSubItems"] });
-    },
   });
 
   const toggleCategory = (categoryId) => {
@@ -144,27 +103,6 @@ export default function BudgetBuilderTab({ projectId }) {
     setSelectedLineItemId(subItem.line_item_id);
     setEditingItem(subItem);
     setShowSubItemForm(true);
-  };
-
-  const handleDelete = (type, item) => {
-    setDeleteDialog({ open: true, type, item });
-  };
-
-  const confirmDelete = async () => {
-    const { type, item } = deleteDialog;
-    try {
-      if (type === "category") {
-        await deleteCategoryMutation.mutateAsync(item.id);
-      } else if (type === "lineItem") {
-        await deleteLineItemMutation.mutateAsync(item.id);
-      } else if (type === "subItem") {
-        await deleteSubItemMutation.mutateAsync(item.id);
-      }
-    } catch (error) {
-      toast.error("Failed to delete: " + error.message);
-    } finally {
-      setDeleteDialog({ open: false, type: null, item: null });
-    }
   };
 
   const grandTotal = categories.reduce((sum, cat) => sum + getCategoryTotal(cat.id), 0);
@@ -241,16 +179,6 @@ export default function BudgetBuilderTab({ projectId }) {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete("category", category);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
                       </div>
                     </div>
 
@@ -301,28 +229,16 @@ export default function BudgetBuilderTab({ projectId }) {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditLineItem(lineItem);
-                                      }}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete("lineItem", lineItem);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3 text-red-500" />
-                                    </Button>
-                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditLineItem(lineItem);
+                                    }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
                                 </div>
 
                                 {/* Sub Items */}
@@ -356,28 +272,16 @@ export default function BudgetBuilderTab({ projectId }) {
                                             <p className="text-sm font-medium text-slate-700">
                                               {formatCurrency(subItem.budget_amount || 0)}
                                             </p>
-                                            <div className="flex items-center gap-2">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleEditSubItem(subItem);
-                                                }}
-                                              >
-                                                <Pencil className="h-3 w-3" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDelete("subItem", subItem);
-                                                }}
-                                              >
-                                                <Trash2 className="h-3 w-3 text-red-500" />
-                                              </Button>
-                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditSubItem(subItem);
+                                              }}
+                                            >
+                                              <Pencil className="h-3 w-3" />
+                                            </Button>
                                           </div>
                                         </div>
                                       ))
@@ -455,14 +359,6 @@ export default function BudgetBuilderTab({ projectId }) {
         />
       )}
 
-      <ConfirmDialog
-        open={deleteDialog.open}
-        onOpenChange={(open) => !open && setDeleteDialog({ open: false, type: null, item: null })}
-        title={`Delete ${deleteDialog.type === "category" ? "Category" : deleteDialog.type === "lineItem" ? "Line Item" : "Sub-item"}`}
-        description={`This will permanently delete this ${deleteDialog.type === "category" ? "category and all its line items and sub-items" : deleteDialog.type === "lineItem" ? "line item and all its sub-items" : "sub-item"}. This cannot be undone.`}
-        onConfirm={confirmDelete}
-        destructive
-      />
     </div>
   );
 }
