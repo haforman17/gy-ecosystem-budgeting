@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectHeader from "../components/project/ProjectHeader";
 import OverviewTab from "../components/project/OverviewTab";
+import BudgetBuilderTab from "../components/project/BudgetBuilderTab";
 import BudgetTab from "../components/project/BudgetTab";
 import RevenueTab from "../components/project/RevenueTab";
 import FundingTab from "../components/project/FundingTab";
@@ -74,6 +75,7 @@ export default function ProjectDetail() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100/60">
           <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="budgetBuilder" className="text-xs sm:text-sm">Budget Builder</TabsTrigger>
           <TabsTrigger value="budget" className="text-xs sm:text-sm">Budget</TabsTrigger>
           <TabsTrigger value="revenue" className="text-xs sm:text-sm">Revenue</TabsTrigger>
           <TabsTrigger value="funding" className="text-xs sm:text-sm">Funding</TabsTrigger>
@@ -87,6 +89,10 @@ export default function ProjectDetail() {
             fundingSources={fundingSources}
             transactions={transactions}
           />
+        </TabsContent>
+
+        <TabsContent value="budgetBuilder" className="mt-6">
+          <BudgetBuilderTab projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="budget" className="mt-6">
