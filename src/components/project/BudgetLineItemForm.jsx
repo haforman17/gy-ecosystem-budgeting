@@ -10,9 +10,10 @@ import { toast } from "sonner";
 
 export default function BudgetLineItemForm({ projectId, categoryId, lineItem, onClose }) {
   const [formData, setFormData] = useState({
+    category: lineItem?.category || "",
+    name: lineItem?.name || "",
     description: lineItem?.description || "",
     budget_amount: lineItem?.budget_amount || 0,
-    category: lineItem?.category || "OTHER",
     date: lineItem?.date || new Date().toISOString().split('T')[0],
   });
 
@@ -50,12 +51,30 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="e.g., Materials, Labor"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
             />
           </div>
           <div>

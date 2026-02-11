@@ -166,6 +166,10 @@ export default function BudgetBuilderTab({ projectId }) {
                             )}
                           </button>
                           <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{category.category}</span>
+                              <span className="text-xs text-slate-400">{category.date}</span>
+                            </div>
                             <h3 className="font-semibold text-slate-900">{category.name}</h3>
                             {category.description && (
                               <p className="text-sm text-slate-500 mt-0.5">{category.description}</p>
@@ -247,7 +251,14 @@ export default function BudgetBuilderTab({ projectId }) {
                                         )}
                                       </button>
                                       <div className="flex-1">
-                                        <p className="font-medium text-slate-800">{lineItem.description}</p>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{lineItem.category}</span>
+                                          <span className="text-xs text-slate-400">{lineItem.date}</span>
+                                        </div>
+                                        <p className="font-medium text-slate-800">{lineItem.name}</p>
+                                        {lineItem.description && (
+                                          <p className="text-xs text-slate-500 mt-0.5">{lineItem.description}</p>
+                                        )}
                                         <p className="text-xs text-slate-400 mt-0.5">
                                           {lineItemSubItems.length} sub-item{lineItemSubItems.length !== 1 ? 's' : ''}
                                         </p>
@@ -309,7 +320,11 @@ export default function BudgetBuilderTab({ projectId }) {
                                         <div key={subItem.id} className="p-2.5 pl-20 hover:bg-slate-50 transition-colors border-t">
                                           <div className="flex items-center justify-between">
                                             <div className="flex-1">
-                                              <p className="text-sm text-slate-700">{subItem.name}</p>
+                                              <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{subItem.category}</span>
+                                                <span className="text-xs text-slate-400">{subItem.date}</span>
+                                              </div>
+                                              <p className="text-sm font-medium text-slate-700">{subItem.name}</p>
                                               {subItem.description && (
                                                 <p className="text-xs text-slate-500 mt-0.5">{subItem.description}</p>
                                               )}

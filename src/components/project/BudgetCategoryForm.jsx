@@ -10,9 +10,11 @@ import { toast } from "sonner";
 
 export default function BudgetCategoryForm({ projectId, category, onClose }) {
   const [formData, setFormData] = useState({
+    category: category?.category || "",
     name: category?.name || "",
     description: category?.description || "",
     budget_amount: category?.budget_amount || 0,
+    date: category?.date || new Date().toISOString().split('T')[0],
   });
 
   const queryClient = useQueryClient();
@@ -45,7 +47,17 @@ export default function BudgetCategoryForm({ projectId, category, onClose }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Category Name</Label>
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="e.g., Site Preparation, Planting"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="name">Name</Label>
             <Input
               id="name"
               value={formData.name}
@@ -62,13 +74,23 @@ export default function BudgetCategoryForm({ projectId, category, onClose }) {
             />
           </div>
           <div>
-            <Label htmlFor="budget_amount">Base Budget Amount (£)</Label>
+            <Label htmlFor="budget_amount">Budget Amount (£)</Label>
             <Input
               id="budget_amount"
               type="number"
               step="0.01"
               value={formData.budget_amount}
               onChange={(e) => setFormData({ ...formData, budget_amount: parseFloat(e.target.value) || 0 })}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
           </div>

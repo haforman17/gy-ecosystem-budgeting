@@ -10,9 +10,11 @@ import { toast } from "sonner";
 
 export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
   const [formData, setFormData] = useState({
+    category: subItem?.category || "",
     name: subItem?.name || "",
     description: subItem?.description || "",
     budget_amount: subItem?.budget_amount || 0,
+    date: subItem?.date || new Date().toISOString().split('T')[0],
     quantity: subItem?.quantity || 0,
     unit: subItem?.unit || "",
     unit_cost: subItem?.unit_cost || 0,
@@ -57,6 +59,16 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
           <DialogTitle>{subItem ? "Edit Sub-item" : "New Sub-item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="e.g., Tools, Equipment"
+              required
+            />
+          </div>
           <div>
             <Label htmlFor="name">Name</Label>
             <Input
@@ -120,6 +132,16 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
                 Auto-calculated: {formData.quantity} × £{formData.unit_cost} = £{(formData.quantity * formData.unit_cost).toFixed(2)}
               </p>
             )}
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
+            />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
