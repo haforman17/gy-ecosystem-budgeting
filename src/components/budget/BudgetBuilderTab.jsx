@@ -229,7 +229,10 @@ export default function BudgetBuilderTab({ projectId }) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEditCategory(category)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditCategory(category);
+                          }}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -297,7 +300,10 @@ export default function BudgetBuilderTab({ projectId }) {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleEditLineItem(lineItem)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditLineItem(lineItem);
+                                      }}
                                     >
                                       <Pencil className="h-3 w-3" />
                                     </Button>
@@ -349,7 +355,10 @@ export default function BudgetBuilderTab({ projectId }) {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleEditSubItem(subItem)}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleEditSubItem(subItem);
+                                                }}
                                               >
                                                 <Pencil className="h-3 w-3" />
                                               </Button>
