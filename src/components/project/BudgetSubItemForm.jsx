@@ -15,9 +15,6 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
     description: subItem?.description || "",
     budget_amount: subItem?.budget_amount || 0,
     date: subItem?.date || new Date().toISOString().split('T')[0],
-    quantity: subItem?.quantity || 0,
-    unit: subItem?.unit || "",
-    unit_cost: subItem?.unit_cost || 0,
   });
 
   const queryClient = useQueryClient();
@@ -42,14 +39,7 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Calculate budget_amount from quantity and unit_cost if provided
-    const finalData = { ...formData };
-    if (formData.quantity && formData.unit_cost) {
-      finalData.budget_amount = formData.quantity * formData.unit_cost;
-    }
-    
-    saveMutation.mutate(finalData);
+    saveMutation.mutate(formData);
   };
 
   return (
@@ -86,52 +76,16 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                step="0.01"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit">Unit</Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                placeholder="e.g., hours, items"
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit_cost">Unit Cost (£)</Label>
-              <Input
-                id="unit_cost"
-                type="number"
-                step="0.01"
-                value={formData.unit_cost}
-                onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
           <div>
-            <Label htmlFor="budget_amount">Total Budget Amount (£)</Label>
+            <Label htmlFor="budget_amount">Budget Amount (£)</Label>
             <Input
               id="budget_amount"
               type="number"
               step="0.01"
-              value={formData.quantity && formData.unit_cost ? formData.quantity * formData.unit_cost : formData.budget_amount}
+              value={formData.budget_amount}
               onChange={(e) => setFormData({ ...formData, budget_amount: parseFloat(e.target.value) || 0 })}
               required
             />
-            {formData.quantity && formData.unit_cost && (
-              <p className="text-xs text-slate-500 mt-1">
-                Auto-calculated: {formData.quantity} × £{formData.unit_cost} = £{(formData.quantity * formData.unit_cost).toFixed(2)}
-              </p>
-            )}
           </div>
           <div>
             <Label htmlFor="date">Date</Label>

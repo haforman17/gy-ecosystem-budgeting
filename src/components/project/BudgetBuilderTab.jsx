@@ -328,11 +328,6 @@ export default function BudgetBuilderTab({ projectId }) {
                                               {subItem.description && (
                                                 <p className="text-xs text-slate-500 mt-0.5">{subItem.description}</p>
                                               )}
-                                              {subItem.quantity && subItem.unit_cost && (
-                                                <p className="text-xs text-slate-400 mt-0.5">
-                                                  {subItem.quantity} {subItem.unit} × {formatCurrency(subItem.unit_cost)}
-                                                </p>
-                                              )}
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <p className="text-sm font-medium text-slate-700">{formatCurrency(subItem.budget_amount)}</p>
