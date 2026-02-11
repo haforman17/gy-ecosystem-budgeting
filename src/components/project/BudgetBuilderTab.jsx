@@ -112,6 +112,23 @@ export default function BudgetBuilderTab({ projectId }) {
 
   const totalBudget = categories.reduce((sum, cat) => sum + calculateCategoryTotal(cat.id), 0);
 
+  // Group categories by Tier 1 Category
+  const tier1Groups = categories.reduce((groups, category) => {
+    const tier1 = category.tier_1_category || "Uncategorized";
+    if (!groups[tier1]) {
+      groups[tier1] = [];
+    }
+    groups[tier1].push(category);
+    return groups;
+  }, {});
+
+  const tier1Order = ["Habitat Conversion Costs", "Operating Costs", "Other", "Uncategorized"];
+  const sortedTier1Keys = Object.keys(tier1Groups).sort((a, b) => {
+    const indexA = tier1Order.indexOf(a);
+    const indexB = tier1Order.indexOf(b);
+    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -144,15 +161,52 @@ export default function BudgetBuilderTab({ projectId }) {
             </div>
           ) : (
             <div className="divide-y">
-              {categories.map((category) => {
+              {sortedTier1Keys.map((tier1Key) => {
+                const tier1Categories = tier1Groups[tier1Key];
+                const tier1Total = tier1Categories.reduce((sum, cat) => sum + calculateCategoryTotal(cat.id), 0);
+                const isTier1Expanded = expandedCategories[`tier1_${tier1Key}`];
+
+                return (
+                  <div key={tier1Key}>
+                    {/* Tier 1 Group Header */}
+                    <div className="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b-2 border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <button
+                            onClick={() => toggleCategory(`tier1_${tier1Key}`)}
+                            className="p-1.5 hover:bg-slate-200 rounded transition-colors"
+                          >
+                            {isTier1Expanded ? (
+                              <ChevronDown className="h-5 w-5 text-slate-700" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-slate-700" />
+                            )}
+                          </button>
+                          <div className="flex-1">
+                            <h2 className="text-lg font-bold text-slate-900">{tier1Key}</h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {tier1Categories.length} categor{tier1Categories.length !== 1 ? 'ies' : 'y'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-slate-900">{formatCurrency(tier1Total)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Categories under this Tier 1 */}
+                    {isTier1Expanded && (
+                      <div className="bg-slate-50/30">
+                        {tier1Categories.map((category) => {
                 const isExpanded = expandedCategories[category.id];
                 const categoryLineItems = getCategoryLineItems(category.id);
                 const categoryTotal = calculateCategoryTotal(category.id);
 
-                return (
-                  <div key={category.id}>
-                    {/* Layer 1: Category */}
-                    <div className="p-4 hover:bg-slate-50 transition-colors">
+                          return (
+                            <div key={category.id}>
+                              {/* Layer 1: Category */}
+                              <div className="p-4 hover:bg-slate-100/50 transition-colors border-b border-slate-100 last:border-b-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
                           <button
@@ -379,14 +433,19 @@ export default function BudgetBuilderTab({ projectId }) {
                             );
                           })
                         )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
       </Card>
 
       {showCategoryForm && (
