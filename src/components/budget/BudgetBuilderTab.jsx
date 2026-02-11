@@ -150,16 +150,21 @@ export default function BudgetBuilderTab({ projectId }) {
     setDeleteDialog({ open: true, type, item });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const { type, item } = deleteDialog;
-    if (type === "category") {
-      deleteCategoryMutation.mutate(item.id);
-    } else if (type === "lineItem") {
-      deleteLineItemMutation.mutate(item.id);
-    } else if (type === "subItem") {
-      deleteSubItemMutation.mutate(item.id);
+    try {
+      if (type === "category") {
+        await deleteCategoryMutation.mutateAsync(item.id);
+      } else if (type === "lineItem") {
+        await deleteLineItemMutation.mutateAsync(item.id);
+      } else if (type === "subItem") {
+        await deleteSubItemMutation.mutateAsync(item.id);
+      }
+    } catch (error) {
+      toast.error("Failed to delete: " + error.message);
+    } finally {
+      setDeleteDialog({ open: false, type: null, item: null });
     }
-    setDeleteDialog({ open: false, type: null, item: null });
   };
 
   const grandTotal = categories.reduce((sum, cat) => sum + getCategoryTotal(cat.id), 0);
