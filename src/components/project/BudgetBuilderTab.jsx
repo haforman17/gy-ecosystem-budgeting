@@ -166,8 +166,14 @@ export default function BudgetBuilderTab({ projectId }) {
                             )}
                           </button>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{category.category}</span>
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">{category.tier_1_category}</span>
+                              {category.tier_2_category && (
+                                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{category.tier_2_category}</span>
+                              )}
+                              {category.tier_3_category && (
+                                <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{category.tier_3_category}</span>
+                              )}
                               <span className="text-xs text-slate-400">{category.date}</span>
                             </div>
                             <h3 className="font-semibold text-slate-900">{category.name}</h3>
@@ -251,8 +257,14 @@ export default function BudgetBuilderTab({ projectId }) {
                                         )}
                                       </button>
                                       <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{lineItem.category}</span>
+                                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                          <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">{lineItem.tier_1_category}</span>
+                                          {lineItem.tier_2_category && (
+                                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{lineItem.tier_2_category}</span>
+                                          )}
+                                          {lineItem.tier_3_category && (
+                                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{lineItem.tier_3_category}</span>
+                                          )}
                                           <span className="text-xs text-slate-400">{lineItem.date}</span>
                                         </div>
                                         <p className="font-medium text-slate-800">{lineItem.name}</p>
@@ -320,8 +332,14 @@ export default function BudgetBuilderTab({ projectId }) {
                                         <div key={subItem.id} className="p-2.5 pl-20 hover:bg-slate-50 transition-colors border-t">
                                           <div className="flex items-center justify-between">
                                             <div className="flex-1">
-                                              <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{subItem.category}</span>
+                                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                                <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">{subItem.tier_1_category}</span>
+                                                {subItem.tier_2_category && (
+                                                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{subItem.tier_2_category}</span>
+                                                )}
+                                                {subItem.tier_3_category && (
+                                                  <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{subItem.tier_3_category}</span>
+                                                )}
                                                 <span className="text-xs text-slate-400">{subItem.date}</span>
                                               </div>
                                               <p className="text-sm font-medium text-slate-700">{subItem.name}</p>
