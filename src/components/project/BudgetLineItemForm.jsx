@@ -55,7 +55,8 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
     name: lineItem?.name || "",
     description: lineItem?.description || "",
     budget_amount: lineItem?.budget_amount || 0,
-    date: lineItem?.date || new Date().toISOString().split('T')[0],
+    month: lineItem?.month || "",
+    year: lineItem?.year || new Date().getFullYear().toString(),
   });
 
   const queryClient = useQueryClient();
@@ -162,7 +163,7 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="budget_amount">Budget Amount (£) *</Label>
               <Input
@@ -175,12 +176,37 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
               />
             </div>
             <div>
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="month">Month</Label>
+              <Select
+                value={formData.month}
+                onValueChange={(value) => setFormData({ ...formData, month: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select month..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="January">January</SelectItem>
+                  <SelectItem value="February">February</SelectItem>
+                  <SelectItem value="March">March</SelectItem>
+                  <SelectItem value="April">April</SelectItem>
+                  <SelectItem value="May">May</SelectItem>
+                  <SelectItem value="June">June</SelectItem>
+                  <SelectItem value="July">July</SelectItem>
+                  <SelectItem value="August">August</SelectItem>
+                  <SelectItem value="September">September</SelectItem>
+                  <SelectItem value="October">October</SelectItem>
+                  <SelectItem value="November">November</SelectItem>
+                  <SelectItem value="December">December</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="year">Year *</Label>
               <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                id="year"
+                type="number"
+                value={formData.year}
+                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                 required
               />
             </div>
