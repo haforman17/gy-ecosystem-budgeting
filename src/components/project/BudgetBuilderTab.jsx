@@ -116,6 +116,88 @@ export default function BudgetBuilderTab({ projectId }) {
 
   const totalBudget = categories.reduce((sum, cat) => sum + calculateCategoryTotal(cat.id), 0);
 
+  const downloadData = (format) => {
+    const exportData = [];
+
+    // Export categories
+    categories.forEach((cat) => {
+      exportData.push({
+        "Type": "Category",
+        "Tier 1 Category": cat.tier_1_category || "",
+        "Tier 2 Category": cat.tier_2_category || "",
+        "Tier 3 Category": cat.tier_3_category || "",
+        "Name": cat.name,
+        "Description": cat.description || "",
+        "Budget Amount": cat.budget_amount,
+        "Month": cat.month || "",
+        "Year": cat.year || "",
+        "ID": cat.id,
+        "Parent Category ID": "",
+        "Parent Line Item ID": ""
+      });
+
+      // Export line items under this category
+      const categoryLineItems = getCategoryLineItems(cat.id);
+      categoryLineItems.forEach((li) => {
+        exportData.push({
+          "Type": "LineItem",
+          "Tier 1 Category": li.tier_1_category || "",
+          "Tier 2 Category": li.tier_2_category || "",
+          "Tier 3 Category": li.tier_3_category || "",
+          "Name": li.name,
+          "Description": li.description || "",
+          "Budget Amount": li.budget_amount,
+          "Month": li.month || "",
+          "Year": li.year || "",
+          "ID": li.id,
+          "Parent Category ID": cat.id,
+          "Parent Line Item ID": ""
+        });
+
+        // Export sub-items under this line item
+        const lineItemSubItems = getLineItemSubItems(li.id);
+        lineItemSubItems.forEach((si) => {
+          exportData.push({
+            "Type": "SubItem",
+            "Tier 1 Category": si.tier_1_category || "",
+            "Tier 2 Category": si.tier_2_category || "",
+            "Tier 3 Category": si.tier_3_category || "",
+            "Name": si.name,
+            "Description": si.description || "",
+            "Budget Amount": si.budget_amount,
+            "Month": si.month || "",
+            "Year": si.year || "",
+            "ID": si.id,
+            "Parent Category ID": "",
+            "Parent Line Item ID": li.id
+          });
+        });
+      });
+    });
+
+    if (exportData.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Budget Data");
+    
+    worksheet['!cols'] = [
+      { wch: 12 }, { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 25 }, 
+      { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 36 }, { wch: 25 }, { wch: 25 }
+    ];
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    if (format === "csv") {
+      XLSX.writeFile(workbook, `budget_data_${timestamp}.csv`, { bookType: "csv" });
+    } else {
+      XLSX.writeFile(workbook, `budget_data_${timestamp}.xlsx`);
+    }
+    toast.success(`Data exported to ${format.toUpperCase()}`);
+  };
+
   const downloadTemplate = () => {
     const template = [
       {
@@ -272,10 +354,25 @@ export default function BudgetBuilderTab({ projectId }) {
           <p className="text-sm text-slate-500 mt-1">Build hierarchical budgets with categories, line items, and sub-items</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={downloadTemplate}>
-            <Download className="h-4 w-4 mr-2" />
-            Download Template
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => downloadData("xlsx")}>
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadData("csv")}>
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={downloadTemplate}>
+                Download Template
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
             Bulk Upload
