@@ -202,13 +202,20 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
             </div>
             <div>
               <Label htmlFor="year">Year *</Label>
-              <Input
-                id="year"
-                type="number"
+              <Select
                 value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, year: value })}
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
