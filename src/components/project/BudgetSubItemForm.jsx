@@ -55,7 +55,8 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
     name: subItem?.name || "",
     description: subItem?.description || "",
     budget_amount: subItem?.budget_amount || 0,
-    date: subItem?.date || new Date().toISOString().split('T')[0],
+    month: subItem?.month || "",
+    year: subItem?.year || new Date().getFullYear().toString(),
   });
 
   const queryClient = useQueryClient();
@@ -161,7 +162,7 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="budget_amount">Budget Amount (£) *</Label>
               <Input
@@ -174,14 +175,46 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
               />
             </div>
             <div>
-              <Label htmlFor="date">Date *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              <Label htmlFor="month">Month</Label>
+              <Select
+                value={formData.month}
+                onValueChange={(value) => setFormData({ ...formData, month: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select month..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="January">January</SelectItem>
+                  <SelectItem value="February">February</SelectItem>
+                  <SelectItem value="March">March</SelectItem>
+                  <SelectItem value="April">April</SelectItem>
+                  <SelectItem value="May">May</SelectItem>
+                  <SelectItem value="June">June</SelectItem>
+                  <SelectItem value="July">July</SelectItem>
+                  <SelectItem value="August">August</SelectItem>
+                  <SelectItem value="September">September</SelectItem>
+                  <SelectItem value="October">October</SelectItem>
+                  <SelectItem value="November">November</SelectItem>
+                  <SelectItem value="December">December</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="year">Year *</Label>
+              <Select
+                value={formData.year}
+                onValueChange={(value) => setFormData({ ...formData, year: value })}
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
