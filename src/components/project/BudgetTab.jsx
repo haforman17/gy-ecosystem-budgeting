@@ -50,7 +50,8 @@ export default function BudgetTab({ projectId }) {
         tier_3_category: cat.tier_3_category,
         name: cat.name,
         budget: cat.budget_amount || 0,
-        year: cat.date ? format(new Date(cat.date), "yyyy") : "",
+        month: cat.month || "",
+        year: cat.year || "",
       });
     });
 
@@ -64,7 +65,8 @@ export default function BudgetTab({ projectId }) {
         tier_3_category: li.tier_3_category,
         name: li.name,
         budget: li.budget_amount || 0,
-        year: li.date ? format(new Date(li.date), "yyyy") : "",
+        month: li.month || "",
+        year: li.year || "",
       });
     });
 
@@ -78,7 +80,8 @@ export default function BudgetTab({ projectId }) {
         tier_3_category: si.tier_3_category,
         name: si.name,
         budget: si.budget_amount || 0,
-        year: si.date ? format(new Date(si.date), "yyyy") : "",
+        month: si.month || "",
+        year: si.year || "",
       });
     });
 
@@ -184,6 +187,7 @@ export default function BudgetTab({ projectId }) {
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Budget</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Actuals</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Variance</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase">Month</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase">Year</TableHead>
                 </TableRow>
               </TableHeader>
@@ -222,6 +226,7 @@ export default function BudgetTab({ projectId }) {
                           {formatCurrency(totals.variance)}
                         </TableCell>
                         <TableCell />
+                        <TableCell />
                       </TableRow>
 
                       {/* Items under this Tier 1 */}
@@ -238,6 +243,7 @@ export default function BudgetTab({ projectId }) {
                             <TableCell className={`text-right text-sm font-medium ${item.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                               {formatCurrency(item.variance)}
                             </TableCell>
+                            <TableCell className="text-xs text-slate-400">{item.month || "—"}</TableCell>
                             <TableCell className="text-xs text-slate-400">{item.year || "—"}</TableCell>
                           </TableRow>
                         ))}
@@ -256,6 +262,7 @@ export default function BudgetTab({ projectId }) {
                   <TableCell className={`text-right text-sm ${grandTotals.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                     {formatCurrency(grandTotals.variance)}
                   </TableCell>
+                  <TableCell />
                   <TableCell />
                 </TableRow>
               </TableBody>
