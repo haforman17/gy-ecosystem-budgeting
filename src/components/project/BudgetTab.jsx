@@ -50,11 +50,17 @@ export default function BudgetTab({ projectId, lineItems }) {
   }, [transactions, lineItems]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.LineItem.delete(id),
+    mutationFn: async (id) => {
+      await base44.entities.LineItem.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
       toast.success("Line item deleted");
       setDeleteId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete line item");
+      console.error(error);
     },
   });
 

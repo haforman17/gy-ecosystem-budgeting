@@ -24,11 +24,17 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Transaction.delete(id),
+    mutationFn: async (id) => {
+      await base44.entities.Transaction.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", projectId] });
       toast.success("Transaction deleted");
       setDeleteId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete transaction");
+      console.error(error);
     },
   });
 

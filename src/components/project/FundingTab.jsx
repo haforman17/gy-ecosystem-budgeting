@@ -21,11 +21,17 @@ export default function FundingTab({ projectId, fundingSources }) {
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FundingSource.delete(id),
+    mutationFn: async (id) => {
+      await base44.entities.FundingSource.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fundingSources", projectId] });
       toast.success("Funding source deleted");
       setDeleteId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete funding source");
+      console.error(error);
     },
   });
 

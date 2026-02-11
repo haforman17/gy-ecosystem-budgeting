@@ -63,11 +63,17 @@ export default function RevenueTab({ projectId, revenueStreams }) {
   }, [transactions, revenueStreams]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.RevenueStream.delete(id),
+    mutationFn: async (id) => {
+      await base44.entities.RevenueStream.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["revenueStreams", projectId] });
       toast.success("Revenue stream deleted");
       setDeleteId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete revenue stream");
+      console.error(error);
     },
   });
 
