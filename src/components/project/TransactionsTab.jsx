@@ -197,6 +197,12 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                     </>
                   )}
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase">Description</TableHead>
+                  {type === "EXPENSE" && (
+                    <>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Month</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Year</TableHead>
+                    </>
+                  )}
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Amount</TableHead>
                   {(type === "EXPENSE" || type === "FUNDING_DRAWDOWN" || type === "DEBT_REPAYMENT") && (
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase">Funding Source</TableHead>
@@ -224,6 +230,12 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       </>
                     )}
                     <TableCell className="text-sm text-slate-700">{tx.description}</TableCell>
+                    {type === "EXPENSE" && (
+                      <>
+                        <TableCell className="text-xs text-slate-500">{tx.month || "—"}</TableCell>
+                        <TableCell className="text-xs text-slate-500">{tx.year || "—"}</TableCell>
+                      </>
+                    )}
                     <TableCell className={`text-right text-sm font-semibold ${
                       type === "REVENUE" ? "text-emerald-600" : type === "EXPENSE" ? "text-red-600" : type === "FUNDING_DRAWDOWN" ? "text-blue-600" : "text-amber-600"
                     }`}>
