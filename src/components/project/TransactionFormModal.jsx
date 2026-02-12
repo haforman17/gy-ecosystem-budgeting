@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,17 +28,65 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     revenue_stream_id: transaction?.revenue_stream_id || "",
     funding_source_id: transaction?.funding_source_id || "",
     reference: transaction?.reference || "",
-    vintage: transaction?.vintage || "",
-    units_quantity: transaction?.units_quantity || "",
-    unit_price: transaction?.unit_price || "",
-    sale_date: transaction?.sale_date || "",
+    tier_1_category: transaction?.tier_1_category || "",
+    tier_2_category: transaction?.tier_2_category || "",
+    month: transaction?.month || "",
+    year: transaction?.year || "",
     receipt_url: transaction?.receipt_url || "",
   });
   const [errors, setErrors] = useState({});
   const [uploading, setUploading] = useState(false);
 
-  const currentYear = new Date().getFullYear();
-  const vintageYears = Array.from({ length: 20 }, (_, i) => currentYear - 5 + i);
+  // Fetch budget data for picklists
+  const { data: budgetCategories = [] } = useQuery({
+    queryKey: ["budgetCategories", projectId],
+    queryFn: () => base44.entities.BudgetCategory.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: budgetLineItems = [] } = useQuery({
+    queryKey: ["budgetLineItems", projectId],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: budgetSubItems = [] } = useQuery({
+    queryKey: ["budgetSubItems"],
+    queryFn: () => base44.entities.SubItem.list(),
+    enabled: true,
+  });
+
+  // Extract unique values from budget data
+  const tier1Options = useMemo(() => {
+    const all = [...budgetCategories, ...budgetLineItems, ...budgetSubItems];
+    const unique = [...new Set(all.map(item => item.tier_1_category).filter(Boolean))];
+    return unique.sort();
+  }, [budgetCategories, budgetLineItems, budgetSubItems]);
+
+  const tier2Options = useMemo(() => {
+    if (!form.tier_1_category) return [];
+    const all = [...budgetCategories, ...budgetLineItems, ...budgetSubItems];
+    const filtered = all.filter(item => item.tier_1_category === form.tier_1_category);
+    const unique = [...new Set(filtered.map(item => item.tier_2_category).filter(Boolean))];
+    return unique.sort();
+  }, [form.tier_1_category, budgetCategories, budgetLineItems, budgetSubItems]);
+
+  const monthOptions = useMemo(() => {
+    const all = [...budgetCategories, ...budgetLineItems, ...budgetSubItems];
+    const unique = [...new Set(all.map(item => item.month).filter(Boolean))];
+    return unique.sort();
+  }, [budgetCategories, budgetLineItems, budgetSubItems]);
+
+  const yearOptions = useMemo(() => {
+    const all = [...budgetCategories, ...budgetLineItems, ...budgetSubItems];
+    const unique = [...new Set(all.map(item => item.year).filter(Boolean))];
+    return unique.sort();
+  }, [budgetCategories, budgetLineItems, budgetSubItems]);
+
+  const ecosystemServiceOptions = useMemo(() => {
+    const unique = [...new Set(revenueStreams.map(rs => rs.credit_type).filter(Boolean))];
+    return unique;
+  }, [revenueStreams]);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -79,14 +127,8 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   const validate = () => {
     const errs = {};
     if (!form.transaction_type) errs.transaction_type = "Required";
-    if (isRevenue) {
-      if (!form.units_quantity || Number(form.units_quantity) <= 0) errs.units_quantity = "Must be > 0";
-      if (!form.unit_price || Number(form.unit_price) <= 0) errs.unit_price = "Must be > 0";
-      if (!form.sale_date) errs.sale_date = "Required";
-    } else {
-      if (!form.amount || Number(form.amount) <= 0) errs.amount = "Must be > 0";
-      if (!form.date) errs.date = "Required";
-    }
+    if (!form.amount || Number(form.amount) <= 0) errs.amount = "Must be > 0";
+    if (!form.date) errs.date = "Required";
     if (!form.description.trim()) errs.description = "Required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -119,20 +161,19 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     if (!validate()) return;
     const data = {
       transaction_type: form.transaction_type,
-      amount: isRevenue ? calculatedRevenue : Number(form.amount),
-      date: isRevenue ? form.sale_date : form.date,
+      amount: Number(form.amount),
+      date: form.date,
       description: form.description,
       reference: form.reference || undefined,
       receipt_url: form.receipt_url || undefined,
     };
-    if (form.line_item_id) data.line_item_id = form.line_item_id;
     if (form.revenue_stream_id) data.revenue_stream_id = form.revenue_stream_id;
     if (form.funding_source_id) data.funding_source_id = form.funding_source_id;
-    if (isRevenue) {
-      data.vintage = form.vintage || undefined;
-      data.units_quantity = Number(form.units_quantity) || undefined;
-      data.unit_price = Number(form.unit_price) || undefined;
-      data.sale_date = form.sale_date || undefined;
+    if (isExpense) {
+      if (form.tier_1_category) data.tier_1_category = form.tier_1_category;
+      if (form.tier_2_category) data.tier_2_category = form.tier_2_category;
+      if (form.month) data.month = form.month;
+      if (form.year) data.year = form.year;
     }
     if (transaction) {
       updateMutation.mutate(data);
@@ -142,14 +183,20 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   };
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const updated = { ...prev, [field]: value };
+      // Reset tier_2 when tier_1 changes
+      if (field === "tier_1_category" && value !== prev.tier_1_category) {
+        updated.tier_2_category = "";
+      }
+      return updated;
+    });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const isExpense = form.transaction_type === "EXPENSE";
   const isRevenue = form.transaction_type === "REVENUE";
-  
-  const calculatedRevenue = isRevenue ? (Number(form.units_quantity) || 0) * (Number(form.unit_price) || 0) : 0;
+  const isFundingDrawdown = form.transaction_type === "FUNDING_DRAWDOWN";
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -173,11 +220,139 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
             {errors.transaction_type && <p className="text-xs text-red-500">{errors.transaction_type}</p>}
           </div>
 
-{isRevenue ? (
+{isExpense ? (
             <>
-              {revenueStreams.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">Date *</Label>
+                <Input
+                  type="date" value={form.date}
+                  onChange={(e) => updateField("date", e.target.value)}
+                  className={errors.date ? "border-red-300" : ""}
+                />
+                {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
+              </div>
+
+              {tier1Options.length > 0 && (
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Link to Ecosystem Service</Label>
+                  <Label className="text-sm">Tier 1</Label>
+                  <Select value={form.tier_1_category} onValueChange={(v) => updateField("tier_1_category", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tier 1" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tier1Options.map((t1) => (
+                        <SelectItem key={t1} value={t1}>{t1}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {tier2Options.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Tier 2</Label>
+                  <Select value={form.tier_2_category} onValueChange={(v) => updateField("tier_2_category", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tier 2" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tier2Options.map((t2) => (
+                        <SelectItem key={t2} value={t2}>{t2}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {monthOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Month</Label>
+                  <Select value={form.month} onValueChange={(v) => updateField("month", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {monthOptions.map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {yearOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Year</Label>
+                  <Select value={form.year} onValueChange={(v) => updateField("year", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((y) => (
+                        <SelectItem key={y} value={y}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Description *</Label>
+                <Input
+                  value={form.description}
+                  onChange={(e) => updateField("description", e.target.value)}
+                  className={errors.description ? "border-red-300" : ""}
+                />
+                {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Amount (£) *</Label>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={form.amount}
+                  onChange={(e) => updateField("amount", e.target.value)}
+                  className={errors.amount ? "border-red-300" : ""}
+                />
+                {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
+              </div>
+
+              {fundingSources.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Funding Source</Label>
+                  <Select value={form.funding_source_id} onValueChange={(v) => updateField("funding_source_id", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select funding source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fundingSources.map((fs) => (
+                        <SelectItem key={fs.id} value={fs.id}>{fs.funder_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Reference</Label>
+                <Input value={form.reference} onChange={(e) => updateField("reference", e.target.value)} placeholder="e.g., INV-001" />
+              </div>
+            </>
+          ) : isRevenue ? (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Date *</Label>
+                <Input
+                  type="date" value={form.date}
+                  onChange={(e) => updateField("date", e.target.value)}
+                  className={errors.date ? "border-red-300" : ""}
+                />
+                {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
+              </div>
+
+              {ecosystemServiceOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Ecosystem Service</Label>
                   <Select value={form.revenue_stream_id} onValueChange={(v) => updateField("revenue_stream_id", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select ecosystem service" />
@@ -194,50 +369,41 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
               )}
 
               <div className="space-y-1.5">
-                <Label className="text-sm">Vintage</Label>
-                <Select value={form.vintage} onValueChange={(v) => updateField("vintage", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vintageYears.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Units Quantity *</Label>
-                  <Input
-                    type="number" step="0.01" min="0"
-                    value={form.units_quantity}
-                    onChange={(e) => updateField("units_quantity", e.target.value)}
-                    className={errors.units_quantity ? "border-red-300" : ""}
-                  />
-                  {errors.units_quantity && <p className="text-xs text-red-500">{errors.units_quantity}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Unit Price (£) *</Label>
-                  <Input
-                    type="number" step="0.01" min="0"
-                    value={form.unit_price}
-                    onChange={(e) => updateField("unit_price", e.target.value)}
-                    className={errors.unit_price ? "border-red-300" : ""}
-                  />
-                  {errors.unit_price && <p className="text-xs text-red-500">{errors.unit_price}</p>}
-                </div>
+                <Label className="text-sm">Description *</Label>
+                <Input
+                  value={form.description}
+                  onChange={(e) => updateField("description", e.target.value)}
+                  className={errors.description ? "border-red-300" : ""}
+                />
+                {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm">Sale Date *</Label>
+                <Label className="text-sm">Amount (£) *</Label>
                 <Input
-                  type="date" value={form.sale_date}
-                  onChange={(e) => updateField("sale_date", e.target.value)}
-                  className={errors.sale_date ? "border-red-300" : ""}
+                  type="number" step="0.01" min="0"
+                  value={form.amount}
+                  onChange={(e) => updateField("amount", e.target.value)}
+                  className={errors.amount ? "border-red-300" : ""}
                 />
-                {errors.sale_date && <p className="text-xs text-red-500">{errors.sale_date}</p>}
+                {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Reference</Label>
+                <Input value={form.reference} onChange={(e) => updateField("reference", e.target.value)} placeholder="e.g., INV-001" />
+              </div>
+            </>
+          ) : isFundingDrawdown ? (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Date *</Label>
+                <Input
+                  type="date" value={form.date}
+                  onChange={(e) => updateField("date", e.target.value)}
+                  className={errors.date ? "border-red-300" : ""}
+                />
+                {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -250,10 +416,30 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                 {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
               </div>
 
-              {calculatedRevenue > 0 && (
-                <div className="bg-emerald-50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-emerald-600 font-medium">Revenue</p>
-                  <p className="text-lg font-bold text-emerald-700">{formatCurrency(calculatedRevenue)}</p>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Amount (£) *</Label>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={form.amount}
+                  onChange={(e) => updateField("amount", e.target.value)}
+                  className={errors.amount ? "border-red-300" : ""}
+                />
+                {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
+              </div>
+
+              {fundingSources.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Funding Source</Label>
+                  <Select value={form.funding_source_id} onValueChange={(v) => updateField("funding_source_id", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select funding source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fundingSources.map((fs) => (
+                        <SelectItem key={fs.id} value={fs.id}>{fs.funder_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -295,38 +481,6 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                 />
                 {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
               </div>
-
-              {isExpense && lineItems.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Link to Line Item</Label>
-                  <Select value={form.line_item_id} onValueChange={(v) => updateField("line_item_id", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Optional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {lineItems.map((li) => (
-                        <SelectItem key={li.id} value={li.id}>{li.description}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {fundingSources.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Funding Source</Label>
-                  <Select value={form.funding_source_id} onValueChange={(v) => updateField("funding_source_id", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Optional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fundingSources.map((fs) => (
-                        <SelectItem key={fs.id} value={fs.id}>{fs.funder_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               <div className="space-y-1.5">
                 <Label className="text-sm">Reference</Label>
