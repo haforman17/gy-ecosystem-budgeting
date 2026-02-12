@@ -13,10 +13,13 @@ import { toast } from "sonner";
 
 const creditTypes = [
   { value: "CARBON", label: "Carbon" },
-  { value: "BNG_HABITAT", label: "BNG Habitat" },
-  { value: "BNG_HEDGEROW", label: "BNG Hedgerow" },
-  { value: "WATERCOURSE", label: "Watercourse" },
-  { value: "NFM", label: "Natural Flood Management" },
+  { value: "BIODIVERSITY", label: "Biodiversity" },
+  { value: "CARBON_PLUS", label: "Carbon +" },
+  { value: "PILOT_PROJECTS", label: "Pilot projects" },
+  { value: "SPARE_ES_TYPE", label: "Spare ES type" },
+  { value: "NFM", label: "NFM" },
+  { value: "WATER_QUALITY", label: "WaterQuality" },
+  { value: "RECREATION", label: "Recreation" },
 ];
 
 export default function RevenueFormModal({ projectId, item, onClose }) {
