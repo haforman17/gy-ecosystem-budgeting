@@ -418,8 +418,15 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                   value={form.amount}
                   onChange={(e) => updateField("amount", e.target.value)}
                   className={errors.amount ? "border-red-300" : ""}
+                  disabled
+                  title="Calculated from units × price"
                 />
                 {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
+                {form.units_quantity && form.unit_price && (
+                  <p className="text-xs text-slate-500">
+                    {Number(form.units_quantity).toLocaleString()} × {formatCurrency(form.unit_price)} = {formatCurrency(form.amount)}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
