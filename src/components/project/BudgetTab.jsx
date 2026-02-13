@@ -90,15 +90,29 @@ export default function BudgetTab({ projectId }) {
 
   // Calculate actuals for each budget item from transactions
   const calculateActuals = (item) => {
-    const matchingTransactions = transactions.filter(
-      (tx) =>
-        tx.transaction_type === "EXPENSE" &&
-        tx.tier_1_category === item.tier_1_category &&
-        tx.tier_2_category === item.tier_2_category &&
-        tx.tier_3_category === item.tier_3_category &&
-        tx.budget_item_name === item.name &&
-        tx.year === item.year
-    );
+    const matchingTransactions = transactions.filter((tx) => {
+      if (tx.transaction_type !== "EXPENSE") return false;
+      
+      // Match on tier_1_category (required)
+      if (tx.tier_1_category !== item.tier_1_category) return false;
+      
+      // Match on tier_2_category if both exist
+      if (tx.tier_2_category && item.tier_2_category) {
+        if (tx.tier_2_category !== item.tier_2_category) return false;
+      }
+      
+      // Match on year if both exist
+      if (tx.year && item.year) {
+        if (tx.year !== item.year) return false;
+      }
+      
+      // Match on month if both exist
+      if (tx.month && item.month) {
+        if (tx.month !== item.month) return false;
+      }
+      
+      return true;
+    });
     return matchingTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
   };
 
