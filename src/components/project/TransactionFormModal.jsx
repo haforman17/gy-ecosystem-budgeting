@@ -195,6 +195,12 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
       if (field === "tier_1_category" && value !== prev.tier_1_category) {
         updated.tier_2_category = "";
       }
+      // Auto-calculate amount for revenue when units or price changes
+      if (updated.transaction_type === "REVENUE" && (field === "units_quantity" || field === "unit_price")) {
+        const units = field === "units_quantity" ? Number(value) : Number(updated.units_quantity);
+        const price = field === "unit_price" ? Number(value) : Number(updated.unit_price);
+        updated.amount = (units || 0) * (price || 0);
+      }
       return updated;
     });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
