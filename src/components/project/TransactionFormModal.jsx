@@ -32,6 +32,8 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     tier_2_category: transaction?.tier_2_category || "",
     month: transaction?.month || "",
     year: transaction?.year || "",
+    units_quantity: transaction?.units_quantity || "",
+    unit_price: transaction?.unit_price || "",
     receipt_url: transaction?.receipt_url || "",
   });
   const [errors, setErrors] = useState({});
@@ -174,6 +176,10 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
       if (form.tier_2_category) data.tier_2_category = form.tier_2_category;
       if (form.month) data.month = form.month;
       if (form.year) data.year = form.year;
+    }
+    if (isRevenue) {
+      if (form.units_quantity) data.units_quantity = Number(form.units_quantity);
+      if (form.unit_price) data.unit_price = Number(form.unit_price);
     }
     if (transaction) {
       updateMutation.mutate(data);
@@ -376,6 +382,27 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                   className={errors.description ? "border-red-300" : ""}
                 />
                 {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Number of Units</Label>
+                  <Input
+                    type="number" step="0.01" min="0"
+                    value={form.units_quantity}
+                    onChange={(e) => updateField("units_quantity", e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Price per Unit (£)</Label>
+                  <Input
+                    type="number" step="0.01" min="0"
+                    value={form.unit_price}
+                    onChange={(e) => updateField("unit_price", e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">

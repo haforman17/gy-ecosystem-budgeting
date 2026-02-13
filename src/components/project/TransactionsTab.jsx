@@ -89,11 +89,13 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
   const exportCSV = (data, type) => {
     let headers, rows;
     if (type === "REVENUE") {
-      headers = ["Date", "Ecosystem Service", "Description", "Amount", "Reference"];
+      headers = ["Date", "Ecosystem Service", "Description", "Units", "Price", "Amount", "Reference"];
       rows = data.map((tx) => [
         tx.date ? format(new Date(tx.date), "yyyy-MM-dd") : "",
         getEcosystemService(tx),
         tx.description,
+        tx.units_quantity || "",
+        tx.unit_price || "",
         tx.amount,
         tx.reference || "",
       ]);
@@ -131,11 +133,13 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
   const exportXLSX = (data, type) => {
     let headers, rows;
     if (type === "REVENUE") {
-      headers = ["Date", "Ecosystem Service", "Description", "Amount", "Reference"];
+      headers = ["Date", "Ecosystem Service", "Description", "Units", "Price", "Amount", "Reference"];
       rows = data.map((tx) => [
         tx.date ? format(new Date(tx.date), "yyyy-MM-dd") : "",
         getEcosystemService(tx),
         tx.description,
+        tx.units_quantity || "",
+        tx.unit_price || "",
         tx.amount,
         tx.reference || "",
       ]);
@@ -203,6 +207,12 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Year</TableHead>
                     </>
                   )}
+                  {type === "REVENUE" && (
+                    <>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Units</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Price</TableHead>
+                    </>
+                  )}
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">Amount</TableHead>
                   {(type === "EXPENSE" || type === "FUNDING_DRAWDOWN" || type === "DEBT_REPAYMENT") && (
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase">Funding Source</TableHead>
@@ -234,6 +244,16 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <>
                         <TableCell className="text-xs text-slate-500">{tx.month || "—"}</TableCell>
                         <TableCell className="text-xs text-slate-500">{tx.year || "—"}</TableCell>
+                      </>
+                    )}
+                    {type === "REVENUE" && (
+                      <>
+                        <TableCell className="text-right text-sm text-slate-600">
+                          {tx.units_quantity ? Number(tx.units_quantity).toLocaleString() : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-slate-600">
+                          {tx.unit_price ? formatCurrency(tx.unit_price) : "—"}
+                        </TableCell>
                       </>
                     )}
                     <TableCell className={`text-right text-sm font-semibold ${
