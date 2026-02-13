@@ -418,8 +418,8 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
                   value={form.amount}
                   onChange={(e) => updateField("amount", e.target.value)}
                   className={errors.amount ? "border-red-300" : ""}
-                  disabled
-                  title="Calculated from units × price"
+                  disabled={form.units_quantity && form.unit_price}
+                  title={form.units_quantity && form.unit_price ? "Calculated from units × price" : "Enter amount or provide units & price"}
                 />
                 {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
                 {form.units_quantity && form.unit_price && (
