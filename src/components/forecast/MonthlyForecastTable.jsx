@@ -124,13 +124,14 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       [],
       ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Month column."],
       [],
-      ["Month", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax"],
+      ["Month", "Forecast Revenue", "Forecast COGS", "Forecast Operating Costs", "Forecast Tax", "Forecast Funding"],
       ...editableData.map((m) => [
         m.month,
         m.forecastRevenue || 0,
-        m.forecastExpenses || 0,
-        m.forecastFunding || 0,
+        m.forecastCOGS || 0,
+        m.forecastOperatingCosts || 0,
         m.forecastTax || 0,
+        m.forecastFunding || 0,
       ]),
     ];
 
@@ -160,7 +161,8 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       }
 
       if (headerRowIndex === -1) {
-        alert("Invalid file format. Please use the template.");
+        toast.error("Invalid file format. Please use the downloaded template.");
+        e.target.value = "";
         return;
       }
 
@@ -172,21 +174,27 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
 
         if (matchingRow) {
           const revenue = parseFloat(matchingRow[1]) || month.forecastRevenue;
-          const expenses = parseFloat(matchingRow[2]) || month.forecastExpenses;
+          const cogs = parseFloat(matchingRow[2]) || (month.forecastCOGS || 0);
+          const opCosts = parseFloat(matchingRow[3]) || (month.forecastOperatingCosts || 0);
+          const tax = parseFloat(matchingRow[4]) || (month.forecastTax || 0);
+          const funding = parseFloat(matchingRow[5]) || (month.forecastFunding || 0);
+          
           return {
             ...month,
             forecastRevenue: revenue,
-            forecastExpenses: expenses,
-            forecastNetCashFlow: revenue - expenses,
+            forecastCOGS: cogs,
+            forecastOperatingCosts: opCosts,
+            forecastTax: tax,
+            forecastFunding: funding,
           };
         }
         return month;
       });
 
       setEditableData(updatedData);
-      alert("Forecast data uploaded successfully!");
+      toast.success("Forecast data uploaded successfully!");
     } catch (error) {
-      alert("Failed to process file. Please check the format and try again.");
+      toast.error("Failed to process file. Please check the format and try again.");
     }
 
     e.target.value = "";
@@ -196,24 +204,49 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
     const wsData = [
       ["Monthly Forecast", `Year: ${year}`],
       [],
-      ["Month", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax", "Net Cash Flow"],
-      ...editableData.map((m) => [
-        m.month,
-        m.forecastRevenue,
-        m.forecastExpenses,
-        m.forecastFunding || 0,
-        m.forecastTax || 0,
-        m.forecastNetCashFlow,
-      ]),
+      ["Month", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
+      ...editableData.map((m) => {
+        const grossMargin = m.forecastRevenue - (m.forecastCOGS || 0);
+        const netIncomeBeforeTax = grossMargin - (m.forecastOperatingCosts || 0);
+        const netIncome = netIncomeBeforeTax - (m.forecastTax || 0);
+        const netCashFlow = netIncome + (m.forecastFunding || 0);
+        return [
+          m.month,
+          m.forecastRevenue,
+          m.forecastCOGS || 0,
+          grossMargin,
+          m.forecastOperatingCosts || 0,
+          netIncomeBeforeTax,
+          m.forecastTax || 0,
+          netIncome,
+          m.forecastFunding || 0,
+          netCashFlow,
+        ];
+      }),
       [],
-      [
-        "TOTAL",
-        editableData.reduce((sum, m) => sum + m.forecastRevenue, 0),
-        editableData.reduce((sum, m) => sum + m.forecastExpenses, 0),
-        editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0),
-        editableData.reduce((sum, m) => sum + (m.forecastTax || 0), 0),
-        editableData.reduce((sum, m) => sum + m.forecastNetCashFlow, 0),
-      ],
+      (() => {
+        const totalRevenue = editableData.reduce((sum, m) => sum + m.forecastRevenue, 0);
+        const totalCOGS = editableData.reduce((sum, m) => sum + (m.forecastCOGS || 0), 0);
+        const totalGrossMargin = totalRevenue - totalCOGS;
+        const totalOpCosts = editableData.reduce((sum, m) => sum + (m.forecastOperatingCosts || 0), 0);
+        const totalNIBeforeTax = totalGrossMargin - totalOpCosts;
+        const totalTax = editableData.reduce((sum, m) => sum + (m.forecastTax || 0), 0);
+        const totalNetIncome = totalNIBeforeTax - totalTax;
+        const totalFunding = editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0);
+        const totalNetCF = totalNetIncome + totalFunding;
+        return [
+          "TOTAL",
+          totalRevenue,
+          totalCOGS,
+          totalGrossMargin,
+          totalOpCosts,
+          totalNIBeforeTax,
+          totalTax,
+          totalNetIncome,
+          totalFunding,
+          totalNetCF,
+        ];
+      })(),
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -275,11 +308,15 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
             <TableHeader>
               <TableRow className="bg-slate-50">
                 <TableHead className="font-semibold">Month</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Funding</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Tax</TableHead>
-                <TableHead className="text-right font-semibold">Net Cash Flow</TableHead>
+                <TableHead className="text-right font-semibold">Revenue</TableHead>
+                <TableHead className="text-right font-semibold">COGS</TableHead>
+                <TableHead className="text-right font-semibold">Gross Margin</TableHead>
+                <TableHead className="text-right font-semibold">Op Costs</TableHead>
+                <TableHead className="text-right font-semibold">NI Before Tax</TableHead>
+                <TableHead className="text-right font-semibold">Tax</TableHead>
+                <TableHead className="text-right font-semibold">Net Income</TableHead>
+                <TableHead className="text-right font-semibold">Funding</TableHead>
+                <TableHead className="text-right font-semibold">Net CF</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -341,20 +378,32 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
                 </TableRow>
                 );
               })}
-              <TableRow className="bg-slate-100 font-bold border-t-2">
-                <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right text-emerald-600">{formatCurrency(totals.revenue)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totals.expenses)}</TableCell>
-                <TableCell className="text-right text-blue-600">
-                  {formatCurrency(editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0))}
-                </TableCell>
-                <TableCell className="text-right text-orange-600">
-                  {formatCurrency(editableData.reduce((sum, m) => sum + (m.forecastTax || 0), 0))}
-                </TableCell>
-                <TableCell className={`text-right ${totals.netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {formatCurrency(totals.netCashFlow)}
-                </TableCell>
-              </TableRow>
+              {(() => {
+                const totalRevenue = editableData.reduce((sum, m) => sum + m.forecastRevenue, 0);
+                const totalCOGS = editableData.reduce((sum, m) => sum + (m.forecastCOGS || 0), 0);
+                const totalGrossMargin = totalRevenue - totalCOGS;
+                const totalOpCosts = editableData.reduce((sum, m) => sum + (m.forecastOperatingCosts || 0), 0);
+                const totalNIBeforeTax = totalGrossMargin - totalOpCosts;
+                const totalTax = editableData.reduce((sum, m) => sum + (m.forecastTax || 0), 0);
+                const totalNetIncome = totalNIBeforeTax - totalTax;
+                const totalFunding = editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0);
+                const totalNetCF = totalNetIncome + totalFunding;
+                
+                return (
+                  <TableRow className="bg-slate-100 font-bold border-t-2">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell className="text-right text-emerald-600">{formatCurrency(totalRevenue)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalCOGS)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalGrossMargin)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalOpCosts)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalNIBeforeTax)}</TableCell>
+                    <TableCell className="text-right text-orange-600">{formatCurrency(totalTax)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalNetIncome)}</TableCell>
+                    <TableCell className="text-right text-blue-600">{formatCurrency(totalFunding)}</TableCell>
+                    <TableCell className={`text-right italic ${totalNetCF >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(totalNetCF)}</TableCell>
+                  </TableRow>
+                );
+              })()}
             </TableBody>
           </Table>
         </div>

@@ -5,15 +5,90 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { Save, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import ScenarioManager from "@/components/forecast/ScenarioManager";
 import * as XLSX from "xlsx";
 
 export default function QuarterlyForecastTable({ data, year, projectId }) {
-  const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(true);
   const [editableData, setEditableData] = useState(data);
+  const [currentScenarioId, setCurrentScenarioId] = useState(null);
+
+  const { data: scenarios = [] } = useQuery({
+    queryKey: ["quarterlyScenarios", projectId, year],
+    queryFn: () => base44.entities.ForecastScenario.filter({ 
+      project_id: projectId,
+      scenario_type: "QUARTERLY",
+      year: year 
+    }),
+    enabled: !!projectId,
+  });
+
+  const saveScenarioMutation = useMutation({
+    mutationFn: async ({ name, data }) => {
+      if (currentScenarioId) {
+        return base44.entities.ForecastScenario.update(currentScenarioId, {
+          scenario_data: data,
+          updated_date: new Date().toISOString()
+        });
+      } else {
+        return base44.entities.ForecastScenario.create({
+          project_id: projectId,
+          scenario_type: "QUARTERLY",
+          year: year,
+          scenario_name: name,
+          scenario_data: data
+        });
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["quarterlyScenarios"] });
+      setCurrentScenarioId(result.id);
+      toast.success("Scenario saved successfully");
+    },
+  });
+
+  const duplicateScenarioMutation = useMutation({
+    mutationFn: async (scenario) => {
+      return base44.entities.ForecastScenario.create({
+        project_id: projectId,
+        scenario_type: "QUARTERLY",
+        year: year,
+        scenario_name: `${scenario.scenario_name} (Copy)`,
+        scenario_data: scenario.scenario_data
+      });
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["quarterlyScenarios"] });
+      setCurrentScenarioId(result.id);
+      toast.success("Scenario duplicated successfully");
+    },
+  });
+
+  const deleteScenarioMutation = useMutation({
+    mutationFn: (id) => base44.entities.ForecastScenario.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quarterlyScenarios"] });
+      setCurrentScenarioId(null);
+      toast.success("Scenario deleted");
+    },
+  });
 
   React.useEffect(() => {
     setEditableData(data);
   }, [data]);
+
+  React.useEffect(() => {
+    if (currentScenarioId) {
+      const scenario = scenarios.find(s => s.id === currentScenarioId);
+      if (scenario && scenario.scenario_data) {
+        setEditableData(scenario.scenario_data);
+      }
+    }
+  }, [currentScenarioId, scenarios]);
 
   const handleChange = (index, field, value) => {
     const newData = [...editableData];
@@ -27,9 +102,20 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
     setEditableData(newData);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // In production, save to backend/entity here
+  const handleSaveScenario = (name) => {
+    saveScenarioMutation.mutate({ name, data: editableData });
+  };
+
+  const handleSelectScenario = (scenarioId) => {
+    setCurrentScenarioId(scenarioId);
+  };
+
+  const handleDuplicateScenario = (scenario) => {
+    duplicateScenarioMutation.mutate(scenario);
+  };
+
+  const handleDeleteScenario = (id) => {
+    deleteScenarioMutation.mutate(id);
   };
 
   const downloadTemplate = () => {
@@ -39,27 +125,18 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Quarter column."],
       [],
       ["Quarter", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
-      ...editableData.map((q) => {
-        const grossMargin = (q.forecastRevenue || 0) - (q.forecastCOGS || 0);
-        const netIncomeBeforeTax = grossMargin - (q.forecastOperatingCosts || 0);
-        const netIncome = netIncomeBeforeTax - (q.forecastTax || 0);
-        const netCashFlow = netIncome + (q.forecastFunding || 0);
-        return [
-          q.quarter,
-          q.forecastRevenue || 0,
-          q.forecastCOGS || 0,
-          grossMargin,
-          q.forecastOperatingCosts || 0,
-          netIncomeBeforeTax,
-          q.forecastTax || 0,
-          netIncome,
-          q.forecastFunding || 0,
-          netCashFlow,
-        ];
-      }),
+      ...editableData.map((q) => [
+        q.quarter,
+        q.forecastRevenue || 0,
+        q.forecastCOGS || 0,
+        q.forecastOperatingCosts || 0,
+        q.forecastTax || 0,
+        q.forecastFunding || 0,
+      ]),
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(templateData);
+    ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, `quarterly-forecast-template-${year}.xlsx`);
@@ -84,7 +161,8 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       }
 
       if (headerRowIndex === -1) {
-        alert("Invalid file format. Please use the template.");
+        toast.error("Invalid file format. Please use the downloaded template.");
+        e.target.value = "";
         return;
       }
 
@@ -95,21 +173,27 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
 
         if (matchingRow) {
           const revenue = parseFloat(matchingRow[1]) || quarter.forecastRevenue;
-          const expenses = parseFloat(matchingRow[2]) || quarter.forecastExpenses;
+          const cogs = parseFloat(matchingRow[2]) || (quarter.forecastCOGS || 0);
+          const opCosts = parseFloat(matchingRow[3]) || (quarter.forecastOperatingCosts || 0);
+          const tax = parseFloat(matchingRow[4]) || (quarter.forecastTax || 0);
+          const funding = parseFloat(matchingRow[5]) || (quarter.forecastFunding || 0);
+          
           return {
             ...quarter,
             forecastRevenue: revenue,
-            forecastExpenses: expenses,
-            forecastNetCashFlow: revenue - expenses,
+            forecastCOGS: cogs,
+            forecastOperatingCosts: opCosts,
+            forecastTax: tax,
+            forecastFunding: funding,
           };
         }
         return quarter;
       });
 
       setEditableData(updatedData);
-      alert("Forecast data uploaded successfully!");
+      toast.success("Forecast data uploaded successfully!");
     } catch (error) {
-      alert("Failed to process file. Please check the format and try again.");
+      toast.error("Failed to process file. Please check the format and try again.");
     }
 
     e.target.value = "";
@@ -142,24 +226,16 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       (() => {
         const totalRevenue = editableData.reduce((sum, q) => sum + q.forecastRevenue, 0);
         const totalCOGS = editableData.reduce((sum, q) => sum + (q.forecastCOGS || 0), 0);
-        const totalGrossMargin = totalRevenue - totalCOGS;
         const totalOpCosts = editableData.reduce((sum, q) => sum + (q.forecastOperatingCosts || 0), 0);
-        const totalNIBeforeTax = totalGrossMargin - totalOpCosts;
         const totalTax = editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0);
-        const totalNetIncome = totalNIBeforeTax - totalTax;
         const totalFunding = editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0);
-        const totalNetCF = totalNetIncome + totalFunding;
         return [
           "TOTAL",
           totalRevenue,
           totalCOGS,
-          totalGrossMargin,
           totalOpCosts,
-          totalNIBeforeTax,
           totalTax,
-          totalNetIncome,
           totalFunding,
-          totalNetCF,
         ];
       })(),
     ];
@@ -173,45 +249,45 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <CardTitle>Quarterly Forecast - {year}</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={downloadTemplate}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Template
-            </Button>
-            <label>
-              <Button size="sm" variant="outline" asChild>
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </label>
-            {isEditing ? (
-              <Button size="sm" onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                Edit Forecast
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ScenarioManager
+              scenarios={scenarios}
+              currentScenarioId={currentScenarioId}
+              onSelectScenario={handleSelectScenario}
+              onSaveScenario={handleSaveScenario}
+              onDuplicateScenario={handleDuplicateScenario}
+              onDeleteScenario={handleDeleteScenario}
+            />
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={downloadTemplate}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download Template
+          </Button>
+          <label>
+            <Button size="sm" variant="outline" asChild>
+              <span>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Template
+              </span>
+            </Button>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+          <Button size="sm" variant="outline" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -239,42 +315,22 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
                   <TableRow key={idx} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{quarter.quarter}</TableCell>
                     <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input type="number" value={quarter.forecastRevenue} onChange={(e) => handleChange(idx, "forecastRevenue", e.target.value)} className="w-32 text-right" />
-                      ) : (
-                        <span className="text-emerald-600">{formatCurrency(quarter.forecastRevenue)}</span>
-                      )}
+                      <Input type="number" value={quarter.forecastRevenue} onChange={(e) => handleChange(idx, "forecastRevenue", e.target.value)} className="w-32 text-right" />
                     </TableCell>
                     <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input type="number" value={quarter.forecastCOGS || 0} onChange={(e) => handleChange(idx, "forecastCOGS", e.target.value)} className="w-32 text-right" />
-                      ) : (
-                        <span className="text-slate-600">{formatCurrency(quarter.forecastCOGS || 0)}</span>
-                      )}
+                      <Input type="number" value={quarter.forecastCOGS || 0} onChange={(e) => handleChange(idx, "forecastCOGS", e.target.value)} className="w-32 text-right" />
                     </TableCell>
                     <TableCell className="text-right text-slate-500 italic">{formatCurrency(grossMargin)}</TableCell>
                     <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input type="number" value={quarter.forecastOperatingCosts || 0} onChange={(e) => handleChange(idx, "forecastOperatingCosts", e.target.value)} className="w-32 text-right" />
-                      ) : (
-                        <span className="text-slate-600">{formatCurrency(quarter.forecastOperatingCosts || 0)}</span>
-                      )}
+                      <Input type="number" value={quarter.forecastOperatingCosts || 0} onChange={(e) => handleChange(idx, "forecastOperatingCosts", e.target.value)} className="w-32 text-right" />
                     </TableCell>
                     <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncomeBeforeTax)}</TableCell>
                     <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input type="number" value={quarter.forecastTax || 0} onChange={(e) => handleChange(idx, "forecastTax", e.target.value)} className="w-32 text-right" />
-                      ) : (
-                        <span className="text-orange-600">{formatCurrency(quarter.forecastTax || 0)}</span>
-                      )}
+                      <Input type="number" value={quarter.forecastTax || 0} onChange={(e) => handleChange(idx, "forecastTax", e.target.value)} className="w-32 text-right" />
                     </TableCell>
                     <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncome)}</TableCell>
                     <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input type="number" value={quarter.forecastFunding || 0} onChange={(e) => handleChange(idx, "forecastFunding", e.target.value)} className="w-32 text-right" />
-                      ) : (
-                        <span className="text-blue-600">{formatCurrency(quarter.forecastFunding || 0)}</span>
-                      )}
+                      <Input type="number" value={quarter.forecastFunding || 0} onChange={(e) => handleChange(idx, "forecastFunding", e.target.value)} className="w-32 text-right" />
                     </TableCell>
                     <TableCell className={`text-right font-medium italic ${netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                       {formatCurrency(netCashFlow)}
