@@ -494,6 +494,7 @@ export default function YearlyForecastTab({ projectId, project }) {
                       <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
                       <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
                       <TableHead className="text-right font-semibold">Variance</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Funding</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -513,6 +514,9 @@ export default function YearlyForecastTab({ projectId, project }) {
                         <TableCell className={`text-right ${(item.varianceExpenses || 0) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
                           {(item.varianceExpenses || 0) >= 0 ? "+" : ""}
                           {formatCurrency(item.varianceExpenses || 0)}
+                        </TableCell>
+                        <TableCell className="text-right text-blue-600 font-medium">
+                          {formatCurrency(item.actualFunding || 0)}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -117,12 +117,14 @@ export default function MonthlyForecastTab({ projectId, project }) {
   const yearTotals = React.useMemo(() => {
     const actualRevenue = combinedData.reduce((sum, m) => sum + m.actualRevenue, 0);
     const actualExpenses = combinedData.reduce((sum, m) => sum + m.actualExpenses, 0);
+    const actualFunding = combinedData.reduce((sum, m) => sum + (m.actualFunding || 0), 0);
     const forecastRevenue = combinedData.reduce((sum, m) => sum + m.forecastRevenue, 0);
     const forecastExpenses = combinedData.reduce((sum, m) => sum + m.forecastExpenses, 0);
 
     return {
       actualRevenue,
       actualExpenses,
+      actualFunding,
       actualNetCashFlow: actualRevenue - actualExpenses,
       forecastRevenue,
       forecastExpenses,

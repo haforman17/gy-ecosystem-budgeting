@@ -38,11 +38,12 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       [],
       ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Month column."],
       [],
-      ["Month", "Forecast Revenue", "Forecast Expenses"],
+      ["Month", "Forecast Revenue", "Forecast Expenses", "Forecast Funding"],
       ...editableData.map((m) => [
         m.month,
         m.forecastRevenue || 0,
         m.forecastExpenses || 0,
+        m.forecastFunding || 0,
       ]),
     ];
 
@@ -108,11 +109,12 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
     const wsData = [
       ["Monthly Forecast", `Year: ${year}`],
       [],
-      ["Month", "Forecast Revenue", "Forecast Expenses", "Net Cash Flow"],
+      ["Month", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Net Cash Flow"],
       ...editableData.map((m) => [
         m.month,
         m.forecastRevenue,
         m.forecastExpenses,
+        m.forecastFunding || 0,
         m.forecastNetCashFlow,
       ]),
       [],
@@ -120,6 +122,7 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
         "TOTAL",
         editableData.reduce((sum, m) => sum + m.forecastRevenue, 0),
         editableData.reduce((sum, m) => sum + m.forecastExpenses, 0),
+        editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0),
         editableData.reduce((sum, m) => sum + m.forecastNetCashFlow, 0),
       ],
     ];
@@ -185,6 +188,7 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
                 <TableHead className="font-semibold">Month</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
+                <TableHead className="text-right font-semibold">Forecast Funding</TableHead>
                 <TableHead className="text-right font-semibold">Net Cash Flow</TableHead>
               </TableRow>
             </TableHeader>
@@ -216,6 +220,18 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
                       formatCurrency(month.forecastExpenses)
                     )}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={month.forecastFunding || 0}
+                        onChange={(e) => handleCellChange(idx, "forecastFunding", e.target.value)}
+                        className="w-32 text-right"
+                      />
+                    ) : (
+                      <span className="text-blue-600">{formatCurrency(month.forecastFunding || 0)}</span>
+                    )}
+                  </TableCell>
                   <TableCell className={`text-right ${month.forecastNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                     {formatCurrency(month.forecastNetCashFlow)}
                   </TableCell>
@@ -225,6 +241,9 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
                 <TableCell>TOTAL</TableCell>
                 <TableCell className="text-right text-emerald-600">{formatCurrency(totals.revenue)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(totals.expenses)}</TableCell>
+                <TableCell className="text-right text-blue-600">
+                  {formatCurrency(editableData.reduce((sum, m) => sum + (m.forecastFunding || 0), 0))}
+                </TableCell>
                 <TableCell className={`text-right ${totals.netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatCurrency(totals.netCashFlow)}
                 </TableCell>
