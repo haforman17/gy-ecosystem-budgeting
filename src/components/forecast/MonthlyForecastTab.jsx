@@ -14,6 +14,7 @@ import { format, startOfYear, endOfYear, eachMonthOfInterval, parseISO } from "d
 export default function MonthlyForecastTab({ projectId, project }) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [currentScenarioId, setCurrentScenarioId] = useState(null);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", projectId],
@@ -30,6 +31,16 @@ export default function MonthlyForecastTab({ projectId, project }) {
   const { data: lineItems = [] } = useQuery({
     queryKey: ["lineItems", projectId],
     queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: scenarios = [] } = useQuery({
+    queryKey: ["monthlyScenarios", projectId, selectedYear],
+    queryFn: () => base44.entities.ForecastScenario.filter({ 
+      project_id: projectId,
+      scenario_type: "MONTHLY",
+      year: selectedYear 
+    }),
     enabled: !!projectId,
   });
 
@@ -104,6 +115,20 @@ export default function MonthlyForecastTab({ projectId, project }) {
       end: endOfYear(new Date(selectedYear, 11, 31)),
     });
 
+    const selectedScenario = scenarios.find(s => s.id === currentScenarioId);
+    
+    if (selectedScenario && selectedScenario.scenario_data && Array.isArray(selectedScenario.scenario_data)) {
+      return selectedScenario.scenario_data.map(item => ({
+        month: item.month,
+        monthDate: item.monthDate,
+        forecastRevenue: item.forecastRevenue || 0,
+        forecastCOGS: item.forecastCOGS || 0,
+        forecastOperatingCosts: item.forecastOperatingCosts || 0,
+        forecastTax: item.forecastTax || 0,
+        forecastFunding: item.forecastFunding || 0,
+      }));
+    }
+
     const annualRevenue = revenueStreams
       .filter((rs) => {
         const genYear = new Date(rs.generation_start_date).getFullYear();
@@ -117,19 +142,32 @@ export default function MonthlyForecastTab({ projectId, project }) {
       month: format(monthDate, "MMM yyyy"),
       monthDate: monthDate,
       forecastRevenue: Math.round(annualRevenue / 12),
-      forecastExpenses: Math.round(annualExpenses / 12),
-      forecastNetCashFlow: Math.round((annualRevenue - annualExpenses) / 12),
+      forecastCOGS: 0,
+      forecastOperatingCosts: Math.round(annualExpenses / 12),
+      forecastTax: 0,
+      forecastFunding: 0,
     }));
-  }, [revenueStreams, lineItems, selectedYear]);
+  }, [revenueStreams, lineItems, selectedYear, scenarios, currentScenarioId]);
 
   const combinedData = React.useMemo(() => {
-    return monthlyActuals.map((actual, idx) => ({
-      ...actual,
-      ...monthlyForecast[idx],
-      varianceRevenue: actual.actualRevenue - (monthlyForecast[idx]?.forecastRevenue || 0),
-      varianceExpenses: actual.actualExpenses - (monthlyForecast[idx]?.forecastExpenses || 0),
-      varianceNetCashFlow: actual.actualNetCashFlow - (monthlyForecast[idx]?.forecastNetCashFlow || 0),
-    }));
+    return monthlyActuals.map((actual, idx) => {
+      const forecast = monthlyForecast[idx] || {};
+      const forecastGrossMargin = (forecast.forecastRevenue || 0) - (forecast.forecastCOGS || 0);
+      const forecastNetIncomeBeforeTax = forecastGrossMargin - (forecast.forecastOperatingCosts || 0);
+      const forecastNetIncome = forecastNetIncomeBeforeTax - (forecast.forecastTax || 0);
+      const forecastNetCashFlow = forecastNetIncome + (forecast.forecastFunding || 0);
+      
+      return {
+        ...actual,
+        ...forecast,
+        forecastGrossMargin,
+        forecastNetIncomeBeforeTax,
+        forecastNetIncome,
+        forecastNetCashFlow,
+        varianceRevenue: actual.actualRevenue - (forecast.forecastRevenue || 0),
+        varianceNetCashFlow: actual.actualNetCashFlow - forecastNetCashFlow,
+      };
+    });
   }, [monthlyActuals, monthlyForecast]);
 
   const yearTotals = React.useMemo(() => {
@@ -255,7 +293,12 @@ export default function MonthlyForecastTab({ projectId, project }) {
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-4">
-          <MonthlyForecastTable data={monthlyForecast} year={selectedYear} projectId={projectId} />
+          <MonthlyForecastTable 
+            data={monthlyForecast} 
+            year={selectedYear} 
+            projectId={projectId}
+            onScenarioChange={setCurrentScenarioId}
+          />
         </TabsContent>
       </Tabs>
     </div>

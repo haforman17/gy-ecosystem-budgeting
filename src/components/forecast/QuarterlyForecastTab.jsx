@@ -15,6 +15,7 @@ export default function QuarterlyForecastTab({ projectId, project }) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [forecastYears, setForecastYears] = useState(1);
+  const [currentScenarioId, setCurrentScenarioId] = useState(null);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", projectId],
@@ -31,6 +32,16 @@ export default function QuarterlyForecastTab({ projectId, project }) {
   const { data: lineItems = [] } = useQuery({
     queryKey: ["lineItems", projectId],
     queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: scenarios = [] } = useQuery({
+    queryKey: ["quarterlyScenarios", projectId, selectedYear],
+    queryFn: () => base44.entities.ForecastScenario.filter({ 
+      project_id: projectId,
+      scenario_type: "QUARTERLY",
+      year: selectedYear 
+    }),
     enabled: !!projectId,
   });
 
@@ -111,6 +122,20 @@ export default function QuarterlyForecastTab({ projectId, project }) {
       end: endOfYear(new Date(endYear, 11, 31)),
     });
 
+    const selectedScenario = scenarios.find(s => s.id === currentScenarioId);
+    
+    if (selectedScenario && selectedScenario.scenario_data && Array.isArray(selectedScenario.scenario_data)) {
+      return selectedScenario.scenario_data.map(item => ({
+        quarter: item.quarter,
+        quarterDate: item.quarterDate,
+        forecastRevenue: item.forecastRevenue || 0,
+        forecastCOGS: item.forecastCOGS || 0,
+        forecastOperatingCosts: item.forecastOperatingCosts || 0,
+        forecastTax: item.forecastTax || 0,
+        forecastFunding: item.forecastFunding || 0,
+      }));
+    }
+
     const annualRevenue = revenueStreams
       .filter((rs) => {
         const genYear = new Date(rs.generation_start_date).getFullYear();
@@ -127,20 +152,33 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         quarter: `Q${quarterNum} ${year}`,
         quarterDate: quarterDate,
         forecastRevenue: Math.round(annualRevenue / 4),
-        forecastExpenses: Math.round(annualExpenses / 4),
-        forecastNetCashFlow: Math.round((annualRevenue - annualExpenses) / 4),
+        forecastCOGS: 0,
+        forecastOperatingCosts: Math.round(annualExpenses / 4),
+        forecastTax: 0,
+        forecastFunding: 0,
       };
     });
-  }, [revenueStreams, lineItems, selectedYear, forecastYears]);
+  }, [revenueStreams, lineItems, selectedYear, forecastYears, scenarios, currentScenarioId]);
 
   const combinedData = React.useMemo(() => {
-    return quarterlyActuals.map((actual, idx) => ({
-      ...actual,
-      ...quarterlyForecast[idx],
-      varianceRevenue: actual.actualRevenue - (quarterlyForecast[idx]?.forecastRevenue || 0),
-      varianceExpenses: actual.actualExpenses - (quarterlyForecast[idx]?.forecastExpenses || 0),
-      varianceNetCashFlow: actual.actualNetCashFlow - (quarterlyForecast[idx]?.forecastNetCashFlow || 0),
-    }));
+    return quarterlyActuals.map((actual, idx) => {
+      const forecast = quarterlyForecast[idx] || {};
+      const forecastGrossMargin = (forecast.forecastRevenue || 0) - (forecast.forecastCOGS || 0);
+      const forecastNetIncomeBeforeTax = forecastGrossMargin - (forecast.forecastOperatingCosts || 0);
+      const forecastNetIncome = forecastNetIncomeBeforeTax - (forecast.forecastTax || 0);
+      const forecastNetCashFlow = forecastNetIncome + (forecast.forecastFunding || 0);
+      
+      return {
+        ...actual,
+        ...forecast,
+        forecastGrossMargin,
+        forecastNetIncomeBeforeTax,
+        forecastNetIncome,
+        forecastNetCashFlow,
+        varianceRevenue: actual.actualRevenue - (forecast.forecastRevenue || 0),
+        varianceNetCashFlow: actual.actualNetCashFlow - forecastNetCashFlow,
+      };
+    });
   }, [quarterlyActuals, quarterlyForecast]);
 
   const yearTotals = React.useMemo(() => {
@@ -281,7 +319,12 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-4">
-          <QuarterlyForecastTable data={quarterlyForecast} year={selectedYear} projectId={projectId} />
+          <QuarterlyForecastTable 
+            data={quarterlyForecast} 
+            year={selectedYear} 
+            projectId={projectId}
+            onScenarioChange={setCurrentScenarioId}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import ScenarioManager from "@/components/forecast/ScenarioManager";
 import * as XLSX from "xlsx";
 
-export default function MonthlyForecastTable({ data, year, projectId }) {
+export default function MonthlyForecastTable({ data, year, projectId, onScenarioChange }) {
   const queryClient = useQueryClient();
   const [editableData, setEditableData] = useState(data);
   const [isEditing, setIsEditing] = useState(true);
@@ -131,9 +131,11 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
     if (!scenarioId) {
       setCurrentScenarioId(null);
       setEditableData(data);
+      if (onScenarioChange) onScenarioChange(null);
       return;
     }
     setCurrentScenarioId(scenarioId);
+    if (onScenarioChange) onScenarioChange(scenarioId);
   };
 
   const handleDuplicateScenario = (scenario) => {
