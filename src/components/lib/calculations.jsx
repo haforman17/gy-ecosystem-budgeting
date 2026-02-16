@@ -54,80 +54,118 @@ export function calculateIncomeStatement(
 
   const totalRevenue = carbonSales + bngSales + watercourseSales + nfmSales + otherRevenue;
 
-  // COGS - direct project costs
+  // COGS - direct project costs (Habitat Conversion Costs)
   const expenseTxs = periodTransactions.filter((tx) => tx.transaction_type === "EXPENSE");
-  const sitePreparation = expenseTxs
+  
+  // Get all expenses under "Habitat Conversion Costs" tier 1 category
+  const habitatConversionExpenses = expenseTxs.filter((tx) => {
+    if (tx.line_item_id) {
+      const li = lineItems.find((l) => l.id === tx.line_item_id);
+      return li?.tier_1_category === "Habitat Conversion Costs";
+    }
+    return tx.tier_1_category === "Habitat Conversion Costs";
+  });
+
+  // Break down by tier 2 categories
+  const sitePreparation = habitatConversionExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "SITE_PREPARATION";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("site prep") || tier2.toLowerCase().includes("preparation");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const planting = expenseTxs
+  const planting = habitatConversionExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "PLANTING";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("plant");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const fencing = expenseTxs
+  const fencing = habitatConversionExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "FENCING";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("fenc");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const surveys = expenseTxs
+  const surveys = habitatConversionExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "SURVEYS";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("survey");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const totalCOGS = sitePreparation + planting + fencing + surveys;
+  const totalCOGS = habitatConversionExpenses.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
   const grossProfit = totalRevenue - totalCOGS;
   const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
-  // Operating Expenses
-  const monitoring = expenseTxs
+  // Operating Expenses (Operating Costs and Other)
+  const operatingAndOtherExpenses = expenseTxs.filter((tx) => {
+    if (tx.line_item_id) {
+      const li = lineItems.find((l) => l.id === tx.line_item_id);
+      return li?.tier_1_category === "Operating Costs" || li?.tier_1_category === "Other";
+    }
+    return tx.tier_1_category === "Operating Costs" || tx.tier_1_category === "Other";
+  });
+
+  const monitoring = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "MONITORING";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("monitor");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const maintenance = expenseTxs
+  const maintenance = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "MAINTENANCE";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("maintain");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const legal = expenseTxs
+  const legal = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "LEGAL";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("legal") || tier2.toLowerCase().includes("permit");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const labor = expenseTxs
+  const labor = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "LABOR";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("labor") || tier2.toLowerCase().includes("staff");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const overhead = expenseTxs
+  const overhead = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "OVERHEAD";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("overhead") || tier2.toLowerCase().includes("admin");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  const other = expenseTxs
+  const other = operatingAndOtherExpenses
     .filter((tx) => {
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "OTHER" || li?.category === "EQUIPMENT";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      const matchesAnyCategory = 
+        tier2.toLowerCase().includes("monitor") ||
+        tier2.toLowerCase().includes("maintain") ||
+        tier2.toLowerCase().includes("legal") ||
+        tier2.toLowerCase().includes("permit") ||
+        tier2.toLowerCase().includes("labor") ||
+        tier2.toLowerCase().includes("staff") ||
+        tier2.toLowerCase().includes("overhead") ||
+        tier2.toLowerCase().includes("admin");
+      return !matchesAnyCategory;
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
@@ -261,8 +299,10 @@ export function calculateBalanceSheet(
   // Fixed Assets - equipment purchases
   const equipment = historicalTxs
     .filter((tx) => {
+      if (tx.transaction_type !== "EXPENSE") return false;
       const li = lineItems.find((l) => l.id === tx.line_item_id);
-      return li?.category === "EQUIPMENT" && tx.transaction_type === "EXPENSE";
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("equipment") || tier2.toLowerCase().includes("machinery");
     })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
   
@@ -401,7 +441,13 @@ export function calculateCashFlowStatement(
   const netOperatingCash = netIncome + interestExpense + changeInAR + changeInInventory + changeInAP;
 
   const equipmentPurchases = periodTransactions
-    .filter((tx) => tx.transaction_type === "EXPENSE" && tx.description?.toLowerCase().includes("equipment"))
+    .filter((tx) => {
+      if (tx.transaction_type !== "EXPENSE") return false;
+      const li = lineItems.find((l) => l.id === tx.line_item_id);
+      const tier2 = li?.tier_2_category || tx.tier_2_category || "";
+      return tier2.toLowerCase().includes("equipment") || tier2.toLowerCase().includes("machinery") ||
+             tx.description?.toLowerCase().includes("equipment");
+    })
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
   const netInvestingCash = -equipmentPurchases;
