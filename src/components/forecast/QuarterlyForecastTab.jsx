@@ -64,8 +64,12 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "REVENUE")
         .reduce((sum, t) => sum + t.amount, 0);
 
-      const expenses = quarterTransactions
-        .filter((t) => t.transaction_type === "EXPENSE")
+      const cogs = quarterTransactions
+        .filter((t) => t.transaction_type === "COGS")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const operatingCosts = quarterTransactions
+        .filter((t) => t.transaction_type === "OPERATING_COST")
         .reduce((sum, t) => sum + t.amount, 0);
 
       const funding = quarterTransactions
@@ -79,14 +83,23 @@ export default function QuarterlyForecastTab({ projectId, project }) {
       const year = quarterDate.getFullYear();
       const quarterNum = Math.floor((quarterDate.getMonth()) / 3) + 1;
 
+      const grossMargin = revenue - cogs;
+      const netIncomeBeforeTax = grossMargin - operatingCosts;
+      const netIncome = netIncomeBeforeTax - tax;
+      const netCashFlow = netIncome + funding;
+
       return {
         quarter: `Q${quarterNum} ${year}`,
         quarterDate: quarterDate,
         actualRevenue: revenue,
-        actualExpenses: expenses,
+        actualCOGS: cogs,
+        actualOperatingCosts: operatingCosts,
         actualFunding: funding,
         actualTax: tax,
-        actualNetCashFlow: revenue - expenses + funding,
+        actualGrossMargin: grossMargin,
+        actualNetIncomeBeforeTax: netIncomeBeforeTax,
+        actualNetIncome: netIncome,
+        actualNetCashFlow: netCashFlow,
       };
     });
   }, [transactions, selectedYear, forecastYears]);
@@ -132,24 +145,43 @@ export default function QuarterlyForecastTab({ projectId, project }) {
 
   const yearTotals = React.useMemo(() => {
     const actualRevenue = combinedData.reduce((sum, q) => sum + q.actualRevenue, 0);
-    const actualExpenses = combinedData.reduce((sum, q) => sum + q.actualExpenses, 0);
+    const actualCOGS = combinedData.reduce((sum, q) => sum + (q.actualCOGS || 0), 0);
+    const actualOperatingCosts = combinedData.reduce((sum, q) => sum + (q.actualOperatingCosts || 0), 0);
     const actualFunding = combinedData.reduce((sum, q) => sum + (q.actualFunding || 0), 0);
     const actualTax = combinedData.reduce((sum, q) => sum + (q.actualTax || 0), 0);
     const forecastRevenue = combinedData.reduce((sum, q) => sum + q.forecastRevenue, 0);
-    const forecastExpenses = combinedData.reduce((sum, q) => sum + q.forecastExpenses, 0);
+    const forecastCOGS = combinedData.reduce((sum, q) => sum + (q.forecastCOGS || 0), 0);
+    const forecastOperatingCosts = combinedData.reduce((sum, q) => sum + (q.forecastOperatingCosts || 0), 0);
+    const forecastTax = combinedData.reduce((sum, q) => sum + (q.forecastTax || 0), 0);
+
+    const actualGrossMargin = actualRevenue - actualCOGS;
+    const forecastGrossMargin = forecastRevenue - forecastCOGS;
+    const actualNetIncomeBeforeTax = actualGrossMargin - actualOperatingCosts;
+    const forecastNetIncomeBeforeTax = forecastGrossMargin - forecastOperatingCosts;
+    const actualNetIncome = actualNetIncomeBeforeTax - actualTax;
+    const forecastNetIncome = forecastNetIncomeBeforeTax - forecastTax;
+    const actualNetCashFlow = actualNetIncome + actualFunding;
+    const forecastNetCashFlow = forecastNetIncome + actualFunding;
 
     return {
       actualRevenue,
-      actualExpenses,
+      actualCOGS,
+      actualOperatingCosts,
       actualFunding,
       actualTax,
-      actualNetCashFlow: actualRevenue - actualExpenses,
+      actualGrossMargin,
+      actualNetIncomeBeforeTax,
+      actualNetIncome,
+      actualNetCashFlow,
       forecastRevenue,
-      forecastExpenses,
-      forecastNetCashFlow: forecastRevenue - forecastExpenses,
+      forecastCOGS,
+      forecastOperatingCosts,
+      forecastGrossMargin,
+      forecastNetIncomeBeforeTax,
+      forecastNetIncome,
+      forecastNetCashFlow,
       varianceRevenue: actualRevenue - forecastRevenue,
-      varianceExpenses: actualExpenses - forecastExpenses,
-      varianceNetCashFlow: actualRevenue - actualExpenses - (forecastRevenue - forecastExpenses),
+      varianceNetCashFlow: actualNetCashFlow - forecastNetCashFlow,
     };
   }, [combinedData]);
 

@@ -18,8 +18,12 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
   const handleChange = (index, field, value) => {
     const newData = [...editableData];
     newData[index][field] = parseFloat(value) || 0;
-    newData[index].forecastNetCashFlow = 
-      newData[index].forecastRevenue - newData[index].forecastExpenses;
+    
+    const grossMargin = newData[index].forecastRevenue - (newData[index].forecastCOGS || 0);
+    const netIncomeBeforeTax = grossMargin - (newData[index].forecastOperatingCosts || 0);
+    const netIncome = netIncomeBeforeTax - (newData[index].forecastTax || 0);
+    newData[index].forecastNetCashFlow = netIncome + (newData[index].forecastFunding || 0);
+    
     setEditableData(newData);
   };
 
@@ -34,14 +38,25 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       [],
       ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Quarter column."],
       [],
-      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax"],
-      ...editableData.map((q) => [
-        q.quarter,
-        q.forecastRevenue || 0,
-        q.forecastExpenses || 0,
-        q.forecastFunding || 0,
-        q.forecastTax || 0,
-      ]),
+      ["Quarter", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
+      ...editableData.map((q) => {
+        const grossMargin = (q.forecastRevenue || 0) - (q.forecastCOGS || 0);
+        const netIncomeBeforeTax = grossMargin - (q.forecastOperatingCosts || 0);
+        const netIncome = netIncomeBeforeTax - (q.forecastTax || 0);
+        const netCashFlow = netIncome + (q.forecastFunding || 0);
+        return [
+          q.quarter,
+          q.forecastRevenue || 0,
+          q.forecastCOGS || 0,
+          grossMargin,
+          q.forecastOperatingCosts || 0,
+          netIncomeBeforeTax,
+          q.forecastTax || 0,
+          netIncome,
+          q.forecastFunding || 0,
+          netCashFlow,
+        ];
+      }),
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(templateData);
@@ -104,24 +119,49 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
     const wsData = [
       ["Quarterly Forecast", `Year: ${year}`],
       [],
-      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax", "Net Cash Flow"],
-      ...editableData.map((q) => [
-        q.quarter,
-        q.forecastRevenue,
-        q.forecastExpenses,
-        q.forecastFunding || 0,
-        q.forecastTax || 0,
-        q.forecastNetCashFlow,
-      ]),
+      ["Quarter", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
+      ...editableData.map((q) => {
+        const grossMargin = q.forecastRevenue - (q.forecastCOGS || 0);
+        const netIncomeBeforeTax = grossMargin - (q.forecastOperatingCosts || 0);
+        const netIncome = netIncomeBeforeTax - (q.forecastTax || 0);
+        const netCashFlow = netIncome + (q.forecastFunding || 0);
+        return [
+          q.quarter,
+          q.forecastRevenue,
+          q.forecastCOGS || 0,
+          grossMargin,
+          q.forecastOperatingCosts || 0,
+          netIncomeBeforeTax,
+          q.forecastTax || 0,
+          netIncome,
+          q.forecastFunding || 0,
+          netCashFlow,
+        ];
+      }),
       [],
-      [
-        "TOTAL",
-        editableData.reduce((sum, q) => sum + q.forecastRevenue, 0),
-        editableData.reduce((sum, q) => sum + q.forecastExpenses, 0),
-        editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0),
-        editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0),
-        editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0),
-      ],
+      (() => {
+        const totalRevenue = editableData.reduce((sum, q) => sum + q.forecastRevenue, 0);
+        const totalCOGS = editableData.reduce((sum, q) => sum + (q.forecastCOGS || 0), 0);
+        const totalGrossMargin = totalRevenue - totalCOGS;
+        const totalOpCosts = editableData.reduce((sum, q) => sum + (q.forecastOperatingCosts || 0), 0);
+        const totalNIBeforeTax = totalGrossMargin - totalOpCosts;
+        const totalTax = editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0);
+        const totalNetIncome = totalNIBeforeTax - totalTax;
+        const totalFunding = editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0);
+        const totalNetCF = totalNetIncome + totalFunding;
+        return [
+          "TOTAL",
+          totalRevenue,
+          totalCOGS,
+          totalGrossMargin,
+          totalOpCosts,
+          totalNIBeforeTax,
+          totalTax,
+          totalNetIncome,
+          totalFunding,
+          totalNetCF,
+        ];
+      })(),
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -177,88 +217,97 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
             <TableHeader>
               <TableRow className="bg-slate-50">
                 <TableHead className="font-semibold">Quarter</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Funding</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Tax</TableHead>
+                <TableHead className="text-right font-semibold">Revenue</TableHead>
+                <TableHead className="text-right font-semibold">COGS</TableHead>
+                <TableHead className="text-right font-semibold">Gross Margin</TableHead>
+                <TableHead className="text-right font-semibold">Op Costs</TableHead>
+                <TableHead className="text-right font-semibold">NI Before Tax</TableHead>
+                <TableHead className="text-right font-semibold">Tax</TableHead>
+                <TableHead className="text-right font-semibold">Net Income</TableHead>
+                <TableHead className="text-right font-semibold">Funding</TableHead>
                 <TableHead className="text-right font-semibold">Net Cash Flow</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {editableData.map((quarter, idx) => (
-                <TableRow key={idx} className="hover:bg-slate-50">
-                  <TableCell className="font-medium">{quarter.quarter}</TableCell>
-                  <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={quarter.forecastRevenue}
-                        onChange={(e) => handleChange(idx, "forecastRevenue", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-emerald-600">{formatCurrency(quarter.forecastRevenue)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={quarter.forecastExpenses}
-                        onChange={(e) => handleChange(idx, "forecastExpenses", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-slate-600">{formatCurrency(quarter.forecastExpenses)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={quarter.forecastFunding || 0}
-                        onChange={(e) => handleChange(idx, "forecastFunding", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-blue-600">{formatCurrency(quarter.forecastFunding || 0)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={quarter.forecastTax || 0}
-                        onChange={(e) => handleChange(idx, "forecastTax", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-orange-600">{formatCurrency(quarter.forecastTax || 0)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${quarter.forecastNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {formatCurrency(quarter.forecastNetCashFlow)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="bg-slate-100 font-bold border-t-2">
-                <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right text-emerald-600">
-                  {formatCurrency(editableData.reduce((sum, q) => sum + q.forecastRevenue, 0))}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(editableData.reduce((sum, q) => sum + q.forecastExpenses, 0))}
-                </TableCell>
-                <TableCell className="text-right text-blue-600">
-                  {formatCurrency(editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0))}
-                </TableCell>
-                <TableCell className="text-right text-orange-600">
-                  {formatCurrency(editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0))}
-                </TableCell>
-                <TableCell className={`text-right ${editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {formatCurrency(editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0))}
-                </TableCell>
-              </TableRow>
+              {editableData.map((quarter, idx) => {
+                const grossMargin = quarter.forecastRevenue - (quarter.forecastCOGS || 0);
+                const netIncomeBeforeTax = grossMargin - (quarter.forecastOperatingCosts || 0);
+                const netIncome = netIncomeBeforeTax - (quarter.forecastTax || 0);
+                const netCashFlow = netIncome + (quarter.forecastFunding || 0);
+                
+                return (
+                  <TableRow key={idx} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">{quarter.quarter}</TableCell>
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <Input type="number" value={quarter.forecastRevenue} onChange={(e) => handleChange(idx, "forecastRevenue", e.target.value)} className="w-32 text-right" />
+                      ) : (
+                        <span className="text-emerald-600">{formatCurrency(quarter.forecastRevenue)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <Input type="number" value={quarter.forecastCOGS || 0} onChange={(e) => handleChange(idx, "forecastCOGS", e.target.value)} className="w-32 text-right" />
+                      ) : (
+                        <span className="text-slate-600">{formatCurrency(quarter.forecastCOGS || 0)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(grossMargin)}</TableCell>
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <Input type="number" value={quarter.forecastOperatingCosts || 0} onChange={(e) => handleChange(idx, "forecastOperatingCosts", e.target.value)} className="w-32 text-right" />
+                      ) : (
+                        <span className="text-slate-600">{formatCurrency(quarter.forecastOperatingCosts || 0)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncomeBeforeTax)}</TableCell>
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <Input type="number" value={quarter.forecastTax || 0} onChange={(e) => handleChange(idx, "forecastTax", e.target.value)} className="w-32 text-right" />
+                      ) : (
+                        <span className="text-orange-600">{formatCurrency(quarter.forecastTax || 0)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncome)}</TableCell>
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <Input type="number" value={quarter.forecastFunding || 0} onChange={(e) => handleChange(idx, "forecastFunding", e.target.value)} className="w-32 text-right" />
+                      ) : (
+                        <span className="text-blue-600">{formatCurrency(quarter.forecastFunding || 0)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className={`text-right font-medium italic ${netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {formatCurrency(netCashFlow)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {(() => {
+                const totalRevenue = editableData.reduce((sum, q) => sum + q.forecastRevenue, 0);
+                const totalCOGS = editableData.reduce((sum, q) => sum + (q.forecastCOGS || 0), 0);
+                const totalGrossMargin = totalRevenue - totalCOGS;
+                const totalOpCosts = editableData.reduce((sum, q) => sum + (q.forecastOperatingCosts || 0), 0);
+                const totalNIBeforeTax = totalGrossMargin - totalOpCosts;
+                const totalTax = editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0);
+                const totalNetIncome = totalNIBeforeTax - totalTax;
+                const totalFunding = editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0);
+                const totalNetCF = totalNetIncome + totalFunding;
+                
+                return (
+                  <TableRow className="bg-slate-100 font-bold border-t-2">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell className="text-right text-emerald-600">{formatCurrency(totalRevenue)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalCOGS)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalGrossMargin)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalOpCosts)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalNIBeforeTax)}</TableCell>
+                    <TableCell className="text-right text-orange-600">{formatCurrency(totalTax)}</TableCell>
+                    <TableCell className="text-right italic">{formatCurrency(totalNetIncome)}</TableCell>
+                    <TableCell className="text-right text-blue-600">{formatCurrency(totalFunding)}</TableCell>
+                    <TableCell className={`text-right italic ${totalNetCF >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(totalNetCF)}</TableCell>
+                  </TableRow>
+                );
+              })()}
             </TableBody>
           </Table>
         </div>

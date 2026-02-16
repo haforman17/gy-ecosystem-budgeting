@@ -17,11 +17,20 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         "Forecast Revenue",
         "Actual Revenue",
         "Revenue Variance",
-        "Forecast Expenses",
-        "Actual Expenses",
-        "Expense Variance",
-        "Actual Funding",
+        "Forecast COGS",
+        "Actual COGS",
+        "COGS Variance",
+        "Forecast Gross Margin",
+        "Actual Gross Margin",
+        "Forecast Operating Costs",
+        "Actual Operating Costs",
+        "Operating Costs Variance",
+        "Forecast Net Income Before Tax",
+        "Actual Net Income Before Tax",
         "Actual Tax",
+        "Forecast Net Income",
+        "Actual Net Income",
+        "Actual Funding",
         "Forecast Net CF",
         "Actual Net CF",
         "Net CF Variance",
@@ -31,11 +40,20 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         q.forecastRevenue,
         q.actualRevenue,
         q.varianceRevenue,
-        q.forecastExpenses,
-        q.actualExpenses,
-        q.varianceExpenses,
-        q.actualFunding || 0,
+        q.forecastCOGS || 0,
+        q.actualCOGS || 0,
+        (q.actualCOGS || 0) - (q.forecastCOGS || 0),
+        q.forecastRevenue - (q.forecastCOGS || 0),
+        q.actualRevenue - (q.actualCOGS || 0),
+        q.forecastOperatingCosts || 0,
+        q.actualOperatingCosts || 0,
+        (q.actualOperatingCosts || 0) - (q.forecastOperatingCosts || 0),
+        (q.forecastRevenue - (q.forecastCOGS || 0)) - (q.forecastOperatingCosts || 0),
+        (q.actualRevenue - (q.actualCOGS || 0)) - (q.actualOperatingCosts || 0),
         q.actualTax || 0,
+        ((q.forecastRevenue - (q.forecastCOGS || 0)) - (q.forecastOperatingCosts || 0)) - (q.forecastTax || 0),
+        ((q.actualRevenue - (q.actualCOGS || 0)) - (q.actualOperatingCosts || 0)) - (q.actualTax || 0),
+        q.actualFunding || 0,
         q.forecastNetCashFlow,
         q.actualNetCashFlow,
         q.varianceNetCashFlow,
@@ -46,11 +64,20 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         totals.forecastRevenue,
         totals.actualRevenue,
         totals.varianceRevenue,
-        totals.forecastExpenses,
-        totals.actualExpenses,
-        totals.varianceExpenses,
-        totals.actualFunding || 0,
+        totals.forecastCOGS || 0,
+        totals.actualCOGS || 0,
+        (totals.actualCOGS || 0) - (totals.forecastCOGS || 0),
+        totals.forecastGrossMargin || 0,
+        totals.actualGrossMargin || 0,
+        totals.forecastOperatingCosts || 0,
+        totals.actualOperatingCosts || 0,
+        (totals.actualOperatingCosts || 0) - (totals.forecastOperatingCosts || 0),
+        totals.forecastNetIncomeBeforeTax || 0,
+        totals.actualNetIncomeBeforeTax || 0,
         totals.actualTax || 0,
+        totals.forecastNetIncome || 0,
+        totals.actualNetIncome || 0,
+        totals.actualFunding || 0,
         totals.forecastNetCashFlow,
         totals.actualNetCashFlow,
         totals.varianceNetCashFlow,
@@ -95,50 +122,70 @@ export default function QuarterlyActualsComparison({ data, totals }) {
                 <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
                 <TableHead className="text-right font-semibold">Actual Revenue</TableHead>
                 <TableHead className="text-right font-semibold">Variance</TableHead>
-                <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
-                <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
+                <TableHead className="text-right font-semibold">Forecast COGS</TableHead>
+                <TableHead className="text-right font-semibold">Actual COGS</TableHead>
                 <TableHead className="text-right font-semibold">Variance</TableHead>
-                <TableHead className="text-right font-semibold">Actual Funding</TableHead>
+                <TableHead className="text-right font-semibold">Forecast Gross Margin</TableHead>
+                <TableHead className="text-right font-semibold">Actual Gross Margin</TableHead>
+                <TableHead className="text-right font-semibold">Forecast Op Costs</TableHead>
+                <TableHead className="text-right font-semibold">Actual Op Costs</TableHead>
+                <TableHead className="text-right font-semibold">Variance</TableHead>
+                <TableHead className="text-right font-semibold">Forecast NI Before Tax</TableHead>
+                <TableHead className="text-right font-semibold">Actual NI Before Tax</TableHead>
                 <TableHead className="text-right font-semibold">Actual Tax</TableHead>
+                <TableHead className="text-right font-semibold">Forecast Net Income</TableHead>
+                <TableHead className="text-right font-semibold">Actual Net Income</TableHead>
+                <TableHead className="text-right font-semibold">Actual Funding</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Net CF</TableHead>
                 <TableHead className="text-right font-semibold">Actual Net CF</TableHead>
                 <TableHead className="text-right font-semibold">Variance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((quarter, idx) => (
-                <TableRow key={idx} className="hover:bg-slate-50">
-                  <TableCell className="font-medium">{quarter.quarter}</TableCell>
-                  <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastRevenue)}</TableCell>
-                  <TableCell className="text-right text-emerald-600 font-medium">
-                    {formatCurrency(quarter.actualRevenue)}
-                  </TableCell>
-                  <TableCell className={`text-right ${quarter.varianceRevenue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {quarter.varianceRevenue >= 0 ? "+" : ""}
-                    {formatCurrency(quarter.varianceRevenue)}
-                  </TableCell>
-                  <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastExpenses)}</TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(quarter.actualExpenses)}</TableCell>
-                  <TableCell className={`text-right ${quarter.varianceExpenses <= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {quarter.varianceExpenses >= 0 ? "+" : ""}
-                    {formatCurrency(quarter.varianceExpenses)}
-                  </TableCell>
-                  <TableCell className="text-right text-blue-600 font-medium">
-                    {formatCurrency(quarter.actualFunding || 0)}
-                  </TableCell>
-                  <TableCell className="text-right text-orange-600 font-medium">
-                    {formatCurrency(quarter.actualTax || 0)}
-                  </TableCell>
-                  <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastNetCashFlow)}</TableCell>
-                  <TableCell className={`text-right font-medium ${quarter.actualNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {formatCurrency(quarter.actualNetCashFlow)}
-                  </TableCell>
-                  <TableCell className={`text-right ${quarter.varianceNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {quarter.varianceNetCashFlow >= 0 ? "+" : ""}
-                    {formatCurrency(quarter.varianceNetCashFlow)}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {data.map((quarter, idx) => {
+                const forecastGrossMargin = quarter.forecastRevenue - (quarter.forecastCOGS || 0);
+                const actualGrossMargin = quarter.actualRevenue - (quarter.actualCOGS || 0);
+                const forecastNetIncomeBeforeTax = forecastGrossMargin - (quarter.forecastOperatingCosts || 0);
+                const actualNetIncomeBeforeTax = actualGrossMargin - (quarter.actualOperatingCosts || 0);
+                const forecastNetIncome = forecastNetIncomeBeforeTax - (quarter.forecastTax || 0);
+                const actualNetIncome = actualNetIncomeBeforeTax - (quarter.actualTax || 0);
+                const forecastNetCF = forecastNetIncome + (quarter.forecastFunding || 0);
+                const actualNetCF = actualNetIncome + (quarter.actualFunding || 0);
+                
+                return (
+                  <TableRow key={idx} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">{quarter.quarter}</TableCell>
+                    <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastRevenue)}</TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium">{formatCurrency(quarter.actualRevenue)}</TableCell>
+                    <TableCell className={`text-right ${quarter.varianceRevenue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {quarter.varianceRevenue >= 0 ? "+" : ""}{formatCurrency(quarter.varianceRevenue)}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastCOGS || 0)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(quarter.actualCOGS || 0)}</TableCell>
+                    <TableCell className={`text-right ${((quarter.actualCOGS || 0) - (quarter.forecastCOGS || 0)) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {((quarter.actualCOGS || 0) - (quarter.forecastCOGS || 0)) >= 0 ? "+" : ""}{formatCurrency((quarter.actualCOGS || 0) - (quarter.forecastCOGS || 0))}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastGrossMargin)}</TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualGrossMargin)}</TableCell>
+                    <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastOperatingCosts || 0)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(quarter.actualOperatingCosts || 0)}</TableCell>
+                    <TableCell className={`text-right ${((quarter.actualOperatingCosts || 0) - (quarter.forecastOperatingCosts || 0)) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {((quarter.actualOperatingCosts || 0) - (quarter.forecastOperatingCosts || 0)) >= 0 ? "+" : ""}{formatCurrency((quarter.actualOperatingCosts || 0) - (quarter.forecastOperatingCosts || 0))}
+                    </TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNetIncomeBeforeTax)}</TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualNetIncomeBeforeTax)}</TableCell>
+                    <TableCell className="text-right text-orange-600 font-medium">{formatCurrency(quarter.actualTax || 0)}</TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNetIncome)}</TableCell>
+                    <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualNetIncome)}</TableCell>
+                    <TableCell className="text-right text-blue-600 font-medium">{formatCurrency(quarter.actualFunding || 0)}</TableCell>
+                    <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNetCF)}</TableCell>
+                    <TableCell className={`text-right font-medium italic ${actualNetCF >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(actualNetCF)}</TableCell>
+                    <TableCell className={`text-right ${(actualNetCF - forecastNetCF) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {(actualNetCF - forecastNetCF) >= 0 ? "+" : ""}{formatCurrency(actualNetCF - forecastNetCF)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               <TableRow className="bg-slate-100 font-bold border-t-2">
                 <TableCell>TOTAL</TableCell>
                 <TableCell className="text-right">{formatCurrency(totals.forecastRevenue)}</TableCell>
@@ -146,32 +193,33 @@ export default function QuarterlyActualsComparison({ data, totals }) {
                 <TableCell className={`text-right ${totals.varianceRevenue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   <div className="flex items-center justify-end gap-2">
                     {getVarianceBadge(totals.varianceRevenue)}
-                    <span>
-                      {totals.varianceRevenue >= 0 ? "+" : ""}
-                      {formatCurrency(totals.varianceRevenue)}
-                    </span>
+                    <span>{totals.varianceRevenue >= 0 ? "+" : ""}{formatCurrency(totals.varianceRevenue)}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right">{formatCurrency(totals.forecastExpenses)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totals.actualExpenses)}</TableCell>
-                <TableCell className={`text-right ${totals.varianceExpenses <= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  <div className="flex items-center justify-end gap-2">
-                    {getVarianceBadge(totals.varianceExpenses, true)}
-                    <span>
-                      {totals.varianceExpenses >= 0 ? "+" : ""}
-                      {formatCurrency(totals.varianceExpenses)}
-                    </span>
-                  </div>
+                <TableCell className="text-right">{formatCurrency(totals.forecastCOGS || 0)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(totals.actualCOGS || 0)}</TableCell>
+                <TableCell className={`text-right ${((totals.actualCOGS || 0) - (totals.forecastCOGS || 0)) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {((totals.actualCOGS || 0) - (totals.forecastCOGS || 0)) >= 0 ? "+" : ""}{formatCurrency((totals.actualCOGS || 0) - (totals.forecastCOGS || 0))}
                 </TableCell>
-                <TableCell className="text-right text-blue-600">{formatCurrency(totals.actualFunding || 0)}</TableCell>
+                <TableCell className="text-right italic">{formatCurrency(totals.forecastGrossMargin || 0)}</TableCell>
+                <TableCell className="text-right text-emerald-600 italic">{formatCurrency(totals.actualGrossMargin || 0)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(totals.forecastOperatingCosts || 0)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(totals.actualOperatingCosts || 0)}</TableCell>
+                <TableCell className={`text-right ${((totals.actualOperatingCosts || 0) - (totals.forecastOperatingCosts || 0)) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {((totals.actualOperatingCosts || 0) - (totals.forecastOperatingCosts || 0)) >= 0 ? "+" : ""}{formatCurrency((totals.actualOperatingCosts || 0) - (totals.forecastOperatingCosts || 0))}
+                </TableCell>
+                <TableCell className="text-right italic">{formatCurrency(totals.forecastNetIncomeBeforeTax || 0)}</TableCell>
+                <TableCell className="text-right text-emerald-600 italic">{formatCurrency(totals.actualNetIncomeBeforeTax || 0)}</TableCell>
                 <TableCell className="text-right text-orange-600">{formatCurrency(totals.actualTax || 0)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totals.forecastNetCashFlow)}</TableCell>
-                <TableCell className={`text-right ${totals.actualNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <TableCell className="text-right italic">{formatCurrency(totals.forecastNetIncome || 0)}</TableCell>
+                <TableCell className="text-right text-emerald-600 italic">{formatCurrency(totals.actualNetIncome || 0)}</TableCell>
+                <TableCell className="text-right text-blue-600">{formatCurrency(totals.actualFunding || 0)}</TableCell>
+                <TableCell className="text-right italic">{formatCurrency(totals.forecastNetCashFlow)}</TableCell>
+                <TableCell className={`text-right italic ${totals.actualNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatCurrency(totals.actualNetCashFlow)}
                 </TableCell>
                 <TableCell className={`text-right ${totals.varianceNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {totals.varianceNetCashFlow >= 0 ? "+" : ""}
-                  {formatCurrency(totals.varianceNetCashFlow)}
+                  {totals.varianceNetCashFlow >= 0 ? "+" : ""}{formatCurrency(totals.varianceNetCashFlow)}
                 </TableCell>
               </TableRow>
             </TableBody>
