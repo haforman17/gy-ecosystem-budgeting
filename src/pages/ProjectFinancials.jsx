@@ -4,10 +4,11 @@ import { createPageUrl } from "../utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download } from "lucide-react";
+import { FileText, Calendar, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingState from "@/components/shared/LoadingState";
 import IncomeStatementTab from "@/components/financials/IncomeStatementTab";
 import BalanceSheetTab from "@/components/financials/BalanceSheetTab";
@@ -19,13 +20,28 @@ import {
   calculateCashFlowStatement,
   calculateEquityStatement,
 } from "@/components/lib/calculations";
-import { startOfYear, endOfYear, subYears, startOfMonth, endOfMonth } from "date-fns";
+import { startOfYear, endOfYear } from "date-fns";
 
 export default function ProjectFinancials() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
-  const [dateRange, setDateRange] = useState("current_year");
+  
+  const currentYear = new Date().getFullYear();
+  const [selectedYears, setSelectedYears] = useState([
+    currentYear - 2,
+    currentYear - 1,
+    currentYear
+  ]);
+
+  // Generate year options (10 years back, 5 years forward)
+  const yearOptions = Array.from({ length: 16 }, (_, i) => currentYear - 10 + i);
+
+  const handleYearChange = (position, newYear) => {
+    const newYears = [...selectedYears];
+    newYears[position] = parseInt(newYear);
+    setSelectedYears(newYears.sort((a, b) => a - b));
+  };
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -58,72 +74,64 @@ export default function ProjectFinancials() {
     enabled: !!projectId,
   });
 
-  const { startDate, endDate } = useMemo(() => {
-    const now = new Date();
-    switch (dateRange) {
-      case "current_year":
-        return { startDate: startOfYear(now), endDate: endOfYear(now) };
-      case "last_year":
-        return { startDate: startOfYear(subYears(now, 1)), endDate: endOfYear(subYears(now, 1)) };
-      case "ytd":
-        return { startDate: startOfYear(now), endDate: now };
-      case "last_12_months":
-        return { startDate: subYears(now, 1), endDate: now };
-      case "this_month":
-        return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
-      case "all_time":
-        return {
-          startDate: project?.start_date ? new Date(project.start_date) : startOfYear(subYears(now, 10)),
-          endDate: now,
-        };
-      default:
-        return { startDate: startOfYear(now), endDate: endOfYear(now) };
-    }
-  }, [dateRange, project]);
-
-  const financialStatements = useMemo(() => {
+  const financialStatementsByYear = useMemo(() => {
     if (!transactions.length) return null;
 
-    const incomeStatement = calculateIncomeStatement(
-      transactions,
-      revenueStreams,
-      lineItems,
-      startDate,
-      endDate
-    );
+    const statementsByYear = {};
 
-    const balanceSheet = calculateBalanceSheet(
-      transactions,
-      revenueStreams,
-      fundingSources,
-      lineItems,
-      endDate
-    );
+    selectedYears.forEach(year => {
+      const startDate = startOfYear(new Date(year, 0, 1));
+      const endDate = endOfYear(new Date(year, 11, 31));
 
-    const cashFlowStatement = calculateCashFlowStatement(
-      transactions,
-      fundingSources,
-      incomeStatement,
-      lineItems,
-      startDate,
-      endDate
-    );
+      const yearTransactions = transactions.filter(t => {
+        if (!t.date) return false;
+        const txDate = new Date(t.date);
+        return txDate >= startDate && txDate <= endDate;
+      });
 
-    const equityStatement = calculateEquityStatement(
-      transactions,
-      fundingSources,
-      incomeStatement,
-      startDate,
-      endDate
-    );
+      const incomeStatement = calculateIncomeStatement(
+        yearTransactions,
+        revenueStreams,
+        lineItems,
+        startDate,
+        endDate
+      );
 
-    return {
-      incomeStatement,
-      balanceSheet,
-      cashFlowStatement,
-      equityStatement,
-    };
-  }, [transactions, revenueStreams, lineItems, fundingSources, startDate, endDate]);
+      const balanceSheet = calculateBalanceSheet(
+        yearTransactions,
+        revenueStreams,
+        fundingSources,
+        lineItems,
+        endDate
+      );
+
+      const cashFlowStatement = calculateCashFlowStatement(
+        yearTransactions,
+        fundingSources,
+        incomeStatement,
+        lineItems,
+        startDate,
+        endDate
+      );
+
+      const equityStatement = calculateEquityStatement(
+        yearTransactions,
+        fundingSources,
+        incomeStatement,
+        startDate,
+        endDate
+      );
+
+      statementsByYear[year] = {
+        incomeStatement,
+        balanceSheet,
+        cashFlowStatement,
+        equityStatement,
+      };
+    });
+
+    return statementsByYear;
+  }, [transactions, revenueStreams, lineItems, fundingSources, selectedYears]);
 
   if (projectLoading || transactionsLoading || revenueLoading || lineItemsLoading || fundingLoading) {
     return <LoadingState />;
@@ -143,31 +151,64 @@ export default function ProjectFinancials() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{project.name}</h1>
-          <p className="text-sm text-slate-500 mt-1">Financial Statements</p>
+          <p className="text-sm text-slate-500 mt-1">Financial Statements (Transaction-Driven)</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this_month">This Month</SelectItem>
-              <SelectItem value="current_year">Current Year</SelectItem>
-              <SelectItem value="ytd">Year to Date</SelectItem>
-              <SelectItem value="last_12_months">Last 12 Months</SelectItem>
-              <SelectItem value="last_year">Last Year</SelectItem>
-              <SelectItem value="all_time">All Time</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}
-          >
-            Back to Project
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate(createPageUrl(`ProjectDetail?id=${projectId}`))}
+        >
+          Back to Project
+        </Button>
       </div>
+
+      {/* Year Selector Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            <div>
+              <CardTitle className="text-base">Year Comparison</CardTitle>
+              <p className="text-xs text-slate-500 mt-0.5">Select three years to compare side-by-side</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            {[0, 1, 2].map((position) => (
+              <div key={position}>
+                <label className="text-xs font-medium text-slate-600 block mb-1.5">
+                  Year {position + 1}
+                </label>
+                <Select 
+                  value={selectedYears[position]?.toString()} 
+                  onValueChange={(value) => handleYearChange(position, value)}
+                >
+                  <SelectTrigger className="bg-emerald-50 border-emerald-200 font-semibold text-emerald-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Info Alert */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-700 text-sm">
+          All financial statements are <strong>auto-generated</strong> from transactions and <strong>cannot be manually edited</strong>. 
+          Values update in real-time when transactions are added, modified, or deleted.
+        </AlertDescription>
+      </Alert>
 
       {/* Tabs */}
       <Tabs defaultValue="income" className="space-y-6">
@@ -191,19 +232,31 @@ export default function ProjectFinancials() {
         </TabsList>
 
         <TabsContent value="income">
-          <IncomeStatementTab data={financialStatements?.incomeStatement} startDate={startDate} endDate={endDate} />
+          <IncomeStatementTab 
+            statementsByYear={financialStatementsByYear} 
+            selectedYears={selectedYears}
+          />
         </TabsContent>
 
         <TabsContent value="balance">
-          <BalanceSheetTab data={financialStatements?.balanceSheet} asOfDate={endDate} />
+          <BalanceSheetTab 
+            statementsByYear={financialStatementsByYear} 
+            selectedYears={selectedYears}
+          />
         </TabsContent>
 
         <TabsContent value="cashflow">
-          <CashFlowTab data={financialStatements?.cashFlowStatement} startDate={startDate} endDate={endDate} />
+          <CashFlowTab 
+            statementsByYear={financialStatementsByYear} 
+            selectedYears={selectedYears}
+          />
         </TabsContent>
 
         <TabsContent value="equity">
-          <EquityStatementTab data={financialStatements?.equityStatement} startDate={startDate} endDate={endDate} />
+          <EquityStatementTab 
+            statementsByYear={financialStatementsByYear} 
+            selectedYears={selectedYears}
+          />
         </TabsContent>
       </Tabs>
     </div>
