@@ -243,8 +243,12 @@ export default function YearlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "REVENUE")
         .reduce((sum, t) => sum + t.amount, 0);
 
-      const expenses = yearTransactions
-        .filter((t) => t.transaction_type === "EXPENSE")
+      const cogs = yearTransactions
+        .filter((t) => t.transaction_type === "COGS")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const operatingCosts = yearTransactions
+        .filter((t) => t.transaction_type === "OPERATING_COST")
         .reduce((sum, t) => sum + t.amount, 0);
 
       const funding = yearTransactions
@@ -255,13 +259,22 @@ export default function YearlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "TAX_PAYMENT")
         .reduce((sum, t) => sum + t.amount, 0);
 
+      const grossMargin = revenue - cogs;
+      const netIncomeBeforeTax = grossMargin - operatingCosts;
+      const netIncome = netIncomeBeforeTax - tax;
+      const netCashFlow = netIncome + funding;
+
       yearsArray.push({
         calendarYear: calendarYear,
         actualRevenue: revenue,
-        actualExpenses: expenses,
+        actualCOGS: cogs,
+        actualOperatingCosts: operatingCosts,
         actualFunding: funding,
         actualTax: tax,
-        actualNetCashFlow: revenue - expenses + funding,
+        actualGrossMargin: grossMargin,
+        actualNetIncomeBeforeTax: netIncomeBeforeTax,
+        actualNetIncome: netIncome,
+        actualNetCashFlow: netCashFlow,
       });
     }
     
@@ -496,39 +509,64 @@ export default function YearlyForecastTab({ projectId, project }) {
                       <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
                       <TableHead className="text-right font-semibold">Actual Revenue</TableHead>
                       <TableHead className="text-right font-semibold">Variance</TableHead>
-                      <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
-                      <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
-                      <TableHead className="text-right font-semibold">Variance</TableHead>
-                      <TableHead className="text-right font-semibold">Actual Funding</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast COGS</TableHead>
+                      <TableHead className="text-right font-semibold">Actual COGS</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Gross Margin</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Gross Margin</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Op Costs</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Op Costs</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast NI Before Tax</TableHead>
+                      <TableHead className="text-right font-semibold">Actual NI Before Tax</TableHead>
                       <TableHead className="text-right font-semibold">Actual Tax</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Net Income</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Net Income</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Funding</TableHead>
+                      <TableHead className="text-right font-semibold">Forecast Net CF</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Net CF</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {combinedData.map((item, idx) => (
-                      <TableRow key={idx} className="hover:bg-slate-50">
-                        <TableCell className="font-medium">{item.calendarYear}</TableCell>
-                        <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_revenue || 0)}</TableCell>
-                        <TableCell className="text-right text-emerald-600 font-medium">
-                          {formatCurrency(item.actualRevenue || 0)}
-                        </TableCell>
-                        <TableCell className={`text-right ${(item.varianceRevenue || 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                          {(item.varianceRevenue || 0) >= 0 ? "+" : ""}
-                          {formatCurrency(item.varianceRevenue || 0)}
-                        </TableCell>
-                        <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_expenses || 0)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(item.actualExpenses || 0)}</TableCell>
-                        <TableCell className={`text-right ${(item.varianceExpenses || 0) <= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                          {(item.varianceExpenses || 0) >= 0 ? "+" : ""}
-                          {formatCurrency(item.varianceExpenses || 0)}
-                        </TableCell>
-                        <TableCell className="text-right text-blue-600 font-medium">
-                          {formatCurrency(item.actualFunding || 0)}
-                        </TableCell>
-                        <TableCell className="text-right text-orange-600 font-medium">
-                          {formatCurrency(item.actualTax || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {combinedData.map((item, idx) => {
+                      const forecastCOGS = item.projected_cogs || 0;
+                      const actualCOGS = item.actualCOGS || 0;
+                      const forecastGrossMargin = (item.projected_revenue || 0) - forecastCOGS;
+                      const actualGrossMargin = (item.actualRevenue || 0) - actualCOGS;
+                      const forecastOpCosts = item.projected_operating_costs || 0;
+                      const actualOpCosts = item.actualOperatingCosts || 0;
+                      const forecastNIBeforeTax = forecastGrossMargin - forecastOpCosts;
+                      const actualNIBeforeTax = actualGrossMargin - actualOpCosts;
+                      const forecastTax = item.projected_tax || 0;
+                      const actualTax = item.actualTax || 0;
+                      const forecastNetIncome = forecastNIBeforeTax - forecastTax;
+                      const actualNetIncome = actualNIBeforeTax - actualTax;
+                      const forecastNetCF = forecastNetIncome + (item.actualFunding || 0);
+                      const actualNetCF = actualNetIncome + (item.actualFunding || 0);
+                      
+                      return (
+                        <TableRow key={idx} className="hover:bg-slate-50">
+                          <TableCell className="font-medium">{item.calendarYear}</TableCell>
+                          <TableCell className="text-right text-slate-600">{formatCurrency(item.projected_revenue || 0)}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium">{formatCurrency(item.actualRevenue || 0)}</TableCell>
+                          <TableCell className={`text-right ${(item.varianceRevenue || 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {(item.varianceRevenue || 0) >= 0 ? "+" : ""}{formatCurrency(item.varianceRevenue || 0)}
+                          </TableCell>
+                          <TableCell className="text-right text-slate-600">{formatCurrency(forecastCOGS)}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(actualCOGS)}</TableCell>
+                          <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastGrossMargin)}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualGrossMargin)}</TableCell>
+                          <TableCell className="text-right text-slate-600">{formatCurrency(forecastOpCosts)}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(actualOpCosts)}</TableCell>
+                          <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNIBeforeTax)}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualNIBeforeTax)}</TableCell>
+                          <TableCell className="text-right text-orange-600 font-medium">{formatCurrency(actualTax)}</TableCell>
+                          <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNetIncome)}</TableCell>
+                          <TableCell className="text-right text-emerald-600 font-medium italic">{formatCurrency(actualNetIncome)}</TableCell>
+                          <TableCell className="text-right text-blue-600 font-medium">{formatCurrency(item.actualFunding || 0)}</TableCell>
+                          <TableCell className="text-right text-slate-500 italic">{formatCurrency(forecastNetCF)}</TableCell>
+                          <TableCell className={`text-right font-medium italic ${actualNetCF >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(actualNetCF)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
