@@ -122,7 +122,7 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
     const templateData = [
       ["Monthly Forecast Template", `Year: ${year}`],
       [],
-      ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Month column."],
+      ["INSTRUCTIONS: Fill in the editable columns (Revenue, COGS, Operating Costs, Tax, Funding). Do not modify the Month column. Calculated columns (Gross Margin, Net Income Before Tax, Net Income, Net Cash Flow) will auto-calculate."],
       [],
       ["Month", "Forecast Revenue", "Forecast COGS", "Forecast Operating Costs", "Forecast Tax", "Forecast Funding"],
       ...editableData.map((m) => [
@@ -166,26 +166,19 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
         return;
       }
 
-      // Parse data rows
       const updatedData = editableData.map((month) => {
         const matchingRow = jsonData
           .slice(headerRowIndex + 1)
           .find((row) => row[0] === month.month);
 
         if (matchingRow) {
-          const revenue = parseFloat(matchingRow[1]) || month.forecastRevenue;
-          const cogs = parseFloat(matchingRow[2]) || (month.forecastCOGS || 0);
-          const opCosts = parseFloat(matchingRow[3]) || (month.forecastOperatingCosts || 0);
-          const tax = parseFloat(matchingRow[4]) || (month.forecastTax || 0);
-          const funding = parseFloat(matchingRow[5]) || (month.forecastFunding || 0);
-          
           return {
             ...month,
-            forecastRevenue: revenue,
-            forecastCOGS: cogs,
-            forecastOperatingCosts: opCosts,
-            forecastTax: tax,
-            forecastFunding: funding,
+            forecastRevenue: parseFloat(matchingRow[1]) || month.forecastRevenue,
+            forecastCOGS: parseFloat(matchingRow[2]) || (month.forecastCOGS || 0),
+            forecastOperatingCosts: parseFloat(matchingRow[3]) || (month.forecastOperatingCosts || 0),
+            forecastTax: parseFloat(matchingRow[4]) || (month.forecastTax || 0),
+            forecastFunding: parseFloat(matchingRow[5]) || (month.forecastFunding || 0),
           };
         }
         return month;

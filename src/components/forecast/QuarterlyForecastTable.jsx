@@ -172,19 +172,13 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
           .find((row) => row[0] === quarter.quarter);
 
         if (matchingRow) {
-          const revenue = parseFloat(matchingRow[1]) || quarter.forecastRevenue;
-          const cogs = parseFloat(matchingRow[2]) || (quarter.forecastCOGS || 0);
-          const opCosts = parseFloat(matchingRow[3]) || (quarter.forecastOperatingCosts || 0);
-          const tax = parseFloat(matchingRow[4]) || (quarter.forecastTax || 0);
-          const funding = parseFloat(matchingRow[5]) || (quarter.forecastFunding || 0);
-          
           return {
             ...quarter,
-            forecastRevenue: revenue,
-            forecastCOGS: cogs,
-            forecastOperatingCosts: opCosts,
-            forecastTax: tax,
-            forecastFunding: funding,
+            forecastRevenue: parseFloat(matchingRow[1]) || quarter.forecastRevenue,
+            forecastCOGS: parseFloat(matchingRow[2]) || (quarter.forecastCOGS || 0),
+            forecastOperatingCosts: parseFloat(matchingRow[3]) || (quarter.forecastOperatingCosts || 0),
+            forecastTax: parseFloat(matchingRow[4]) || (quarter.forecastTax || 0),
+            forecastFunding: parseFloat(matchingRow[5]) || (quarter.forecastFunding || 0),
           };
         }
         return quarter;
