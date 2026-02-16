@@ -419,6 +419,7 @@ export function calculateCashFlowStatement(
   transactions,
   fundingSources,
   incomeStatement,
+  lineItems,
   startDate,
   endDate
 ) {

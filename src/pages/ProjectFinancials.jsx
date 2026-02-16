@@ -104,6 +104,7 @@ export default function ProjectFinancials() {
       transactions,
       fundingSources,
       incomeStatement,
+      lineItems,
       startDate,
       endDate
     );
