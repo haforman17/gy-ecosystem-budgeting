@@ -22,6 +22,16 @@ export default function Dashboard() {
     queryFn: () => base44.entities.LineItem.list(),
   });
 
+  const { data: budgetCategories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["budgetCategories"],
+    queryFn: () => base44.entities.BudgetCategory.list(),
+  });
+
+  const { data: subItems = [], isLoading: loadingSubItems } = useQuery({
+    queryKey: ["subItems"],
+    queryFn: () => base44.entities.SubItem.list(),
+  });
+
   const { data: revenueStreams = [], isLoading: loadingRevenue } = useQuery({
     queryKey: ["revenueStreams"],
     queryFn: () => base44.entities.RevenueStream.list(),
@@ -37,7 +47,7 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Transaction.list(),
   });
 
-  const isLoading = loadingProjects || loadingLineItems || loadingRevenue || loadingFunding || loadingTransactions;
+  const isLoading = loadingProjects || loadingLineItems || loadingCategories || loadingSubItems || loadingRevenue || loadingFunding || loadingTransactions;
 
   if (isLoading) return <LoadingState message="Loading dashboard..." />;
 
@@ -61,6 +71,8 @@ export default function Dashboard() {
       <DashboardMetrics
         projects={projects}
         lineItems={lineItems}
+        budgetCategories={budgetCategories}
+        subItems={subItems}
         revenueStreams={revenueStreams}
         fundingSources={fundingSources}
         transactions={transactions}

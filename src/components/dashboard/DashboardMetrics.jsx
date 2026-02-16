@@ -2,8 +2,12 @@ import MetricCard from "../shared/MetricCard";
 import { formatCurrency } from "../shared/CurrencyFormat";
 import { FolderTree, Wallet, TrendingUp, PiggyBank } from "lucide-react";
 
-export default function DashboardMetrics({ projects, lineItems, revenueStreams, fundingSources, transactions }) {
-  const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+export default function DashboardMetrics({ projects, lineItems, revenueStreams, fundingSources, transactions, budgetCategories, subItems }) {
+  // Calculate total budget from all budget sources
+  const totalBudget = 
+    (lineItems?.reduce((sum, li) => sum + (li.budget_amount || 0), 0) || 0) +
+    (budgetCategories?.reduce((sum, bc) => sum + (bc.budget_amount || 0), 0) || 0) +
+    (subItems?.reduce((sum, si) => sum + (si.budget_amount || 0), 0) || 0);
   const totalActualSpend = transactions
     .filter((t) => t.transaction_type === "EXPENSE")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
