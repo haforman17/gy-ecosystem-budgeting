@@ -8,6 +8,7 @@ import { TrendingUp, Download, Plus, Settings, Trash2, Save, Upload, FileSpreads
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import ScenarioFormModal from "@/components/forecast/ScenarioFormModal";
 import ForecastChart from "@/components/forecast/ForecastChart";
+import YearlyForecastOnlyChart from "@/components/forecast/YearlyForecastOnlyChart";
 import EditableForecastTable from "@/components/forecast/EditableForecastTable";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { generateForecastPeriods, calculateFinancialMetrics } from "@/components/lib/forecastCalculations";
@@ -629,8 +630,8 @@ export default function YearlyForecastTab({ projectId, project }) {
         <TabsContent value="forecast" className="space-y-4">
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ForecastChart forecastData={forecastData} type="line" />
-            <ForecastChart forecastData={forecastData} type="bar" />
+            <YearlyForecastOnlyChart forecastData={forecastData} type="line" />
+            <YearlyForecastOnlyChart forecastData={forecastData} type="bar" />
           </div>
 
           {/* Table */}

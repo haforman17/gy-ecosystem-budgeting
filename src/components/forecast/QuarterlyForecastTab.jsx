@@ -9,6 +9,7 @@ import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import QuarterlyForecastTable from "@/components/forecast/QuarterlyForecastTable";
 import QuarterlyActualsComparison from "@/components/forecast/QuarterlyActualsComparison";
 import QuarterlyForecastChart from "@/components/forecast/QuarterlyForecastChart";
+import QuarterlyForecastOnlyChart from "@/components/forecast/QuarterlyForecastOnlyChart";
 import { startOfYear, endOfYear, startOfQuarter, endOfQuarter, eachQuarterOfInterval, parseISO } from "date-fns";
 
 export default function QuarterlyForecastTab({ projectId, project }) {
@@ -319,6 +320,10 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <QuarterlyForecastOnlyChart data={quarterlyForecast} type="line" />
+            <QuarterlyForecastOnlyChart data={quarterlyForecast} type="bar" />
+          </div>
           <QuarterlyForecastTable 
             data={quarterlyForecast} 
             year={selectedYear} 

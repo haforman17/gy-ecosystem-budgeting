@@ -9,6 +9,7 @@ import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import MonthlyForecastTable from "@/components/forecast/MonthlyForecastTable";
 import MonthlyActualsComparison from "@/components/forecast/MonthlyActualsComparison";
 import MonthlyForecastChart from "@/components/forecast/MonthlyForecastChart";
+import MonthlyForecastOnlyChart from "@/components/forecast/MonthlyForecastOnlyChart";
 import { format, startOfYear, endOfYear, eachMonthOfInterval, parseISO } from "date-fns";
 
 export default function MonthlyForecastTab({ projectId, project }) {
@@ -293,6 +294,10 @@ export default function MonthlyForecastTab({ projectId, project }) {
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <MonthlyForecastOnlyChart data={monthlyForecast} type="line" />
+            <MonthlyForecastOnlyChart data={monthlyForecast} type="bar" />
+          </div>
           <MonthlyForecastTable 
             data={monthlyForecast} 
             year={selectedYear} 
