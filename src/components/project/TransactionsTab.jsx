@@ -100,9 +100,10 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
         tx.reference || "",
       ]);
     } else if (type === "EXPENSE") {
-      headers = ["Date", "Tier 1", "Tier 2", "Description", "Amount", "Funding Source", "Reference"];
+      headers = ["Date", "Cost Type", "Tier 1", "Tier 2", "Description", "Amount", "Funding Source", "Reference"];
       rows = data.map((tx) => [
         tx.date ? format(new Date(tx.date), "yyyy-MM-dd") : "",
+        tx.cost_type === "OP_COSTS" ? "Op Costs" : tx.cost_type === "COGS" ? "COGS" : "",
         getLineItemTier1(tx),
         getLineItemTier2(tx),
         tx.description,
@@ -144,9 +145,10 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
         tx.reference || "",
       ]);
     } else if (type === "EXPENSE") {
-      headers = ["Date", "Tier 1", "Tier 2", "Description", "Amount", "Funding Source", "Reference"];
+      headers = ["Date", "Cost Type", "Tier 1", "Tier 2", "Description", "Amount", "Funding Source", "Reference"];
       rows = data.map((tx) => [
         tx.date ? format(new Date(tx.date), "yyyy-MM-dd") : "",
+        tx.cost_type === "OP_COSTS" ? "Op Costs" : tx.cost_type === "COGS" ? "COGS" : "",
         getLineItemTier1(tx),
         getLineItemTier2(tx),
         tx.description,
@@ -238,9 +240,7 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <>
                         <TableCell className="text-xs">
                           {tx.cost_type ? (
-                            <span className={`px-2 py-0.5 rounded font-semibold text-white ${
-                              tx.cost_type === "OP_COSTS" ? "bg-slate-600" : "bg-slate-700"
-                            }`}>
+                            <span className="font-semibold text-white bg-slate-600 px-2 py-0.5 rounded">
                               {tx.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
                             </span>
                           ) : "—"}
