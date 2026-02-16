@@ -21,7 +21,15 @@ export default function EditableForecastTable({ forecastData, onUpdatePeriod }) 
 
   const saveEdit = () => {
     if (onUpdatePeriod) {
-      onUpdatePeriod(editedData);
+      const grossMargin = (editedData.projected_revenue || 0) - (editedData.projected_cogs || 0);
+      const netIncomeBeforeTax = grossMargin - (editedData.projected_operating_costs || 0);
+      const netIncome = netIncomeBeforeTax - (editedData.projected_tax || 0);
+      const cashFlow = netIncome + (editedData.projected_funding || 0);
+      
+      onUpdatePeriod({
+        ...editedData,
+        projected_cash_flow: cashFlow
+      });
     }
     setEditingRow(null);
     setEditedData({});

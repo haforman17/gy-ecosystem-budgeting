@@ -29,10 +29,19 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
 
   const saveScenarioMutation = useMutation({
     mutationFn: async ({ name, data }) => {
+      const cleanedData = data.map(item => ({
+        month: item.month,
+        monthDate: item.monthDate,
+        forecastRevenue: item.forecastRevenue || 0,
+        forecastCOGS: item.forecastCOGS || 0,
+        forecastOperatingCosts: item.forecastOperatingCosts || 0,
+        forecastTax: item.forecastTax || 0,
+        forecastFunding: item.forecastFunding || 0,
+      }));
+
       if (currentScenarioId) {
         return base44.entities.ForecastScenario.update(currentScenarioId, {
-          scenario_data: data,
-          updated_date: new Date().toISOString()
+          scenario_data: cleanedData
         });
       } else {
         return base44.entities.ForecastScenario.create({
@@ -40,15 +49,18 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
           scenario_type: "MONTHLY",
           year: year,
           scenario_name: name,
-          scenario_data: data
+          scenario_data: cleanedData
         });
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios", projectId, year] });
       setCurrentScenarioId(result.id);
-      toast.success("Scenario saved successfully");
+      toast.success(currentScenarioId ? "Scenario updated successfully" : "Scenario saved successfully");
     },
+    onError: (error) => {
+      toast.error("Failed to save scenario: " + error.message);
+    }
   });
 
   const duplicateScenarioMutation = useMutation({
@@ -62,29 +74,38 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       });
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios", projectId, year] });
       setCurrentScenarioId(result.id);
       toast.success("Scenario duplicated successfully");
     },
+    onError: (error) => {
+      toast.error("Failed to duplicate scenario: " + error.message);
+    }
   });
 
   const deleteScenarioMutation = useMutation({
     mutationFn: (id) => base44.entities.ForecastScenario.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios", projectId, year] });
       setCurrentScenarioId(null);
+      setEditableData(data);
       toast.success("Scenario deleted");
     },
+    onError: (error) => {
+      toast.error("Failed to delete scenario: " + error.message);
+    }
   });
 
   React.useEffect(() => {
-    setEditableData(data);
-  }, [data]);
+    if (!currentScenarioId) {
+      setEditableData(data);
+    }
+  }, [data, currentScenarioId]);
 
   React.useEffect(() => {
     if (currentScenarioId) {
       const scenario = scenarios.find(s => s.id === currentScenarioId);
-      if (scenario && scenario.scenario_data) {
+      if (scenario && scenario.scenario_data && Array.isArray(scenario.scenario_data)) {
         setEditableData(scenario.scenario_data);
       }
     }
@@ -107,6 +128,11 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
   };
 
   const handleSelectScenario = (scenarioId) => {
+    if (!scenarioId) {
+      setCurrentScenarioId(null);
+      setEditableData(data);
+      return;
+    }
     setCurrentScenarioId(scenarioId);
   };
 

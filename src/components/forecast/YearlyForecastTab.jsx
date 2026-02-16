@@ -27,11 +27,16 @@ export default function YearlyForecastTab({ projectId, project }) {
   const [scenarioToDelete, setScenarioToDelete] = useState(null);
   const [savedPeriods, setSavedPeriods] = useState([]);
 
-  const { data: scenarios = [] } = useQuery({
+  const { data: oldScenarios = [] } = useQuery({
     queryKey: ["forecastScenarios", projectId],
-    queryFn: () => base44.entities.ForecastScenario.filter({ project_id: projectId }),
+    queryFn: () => base44.entities.ForecastScenario.filter({ 
+      project_id: projectId,
+      scenario_type: "YEARLY_30YR"
+    }),
     enabled: !!projectId,
   });
+
+  const scenarios = oldScenarios.filter(s => !s.scenario_type || s.scenario_type === "YEARLY_30YR");
 
   const { data: revenueStreams = [] } = useQuery({
     queryKey: ["revenueStreams", projectId],
@@ -72,34 +77,77 @@ export default function YearlyForecastTab({ projectId, project }) {
   });
 
   React.useEffect(() => {
-    setSavedPeriods(forecastPeriods);
-  }, [forecastPeriods]);
+    if (selectedScenario && selectedScenario.scenario_data && Array.isArray(selectedScenario.scenario_data)) {
+      setSavedPeriods(selectedScenario.scenario_data);
+    } else {
+      setSavedPeriods([]);
+    }
+  }, [selectedScenario]);
 
   const saveForecastMutation = useMutation({
-    mutationFn: async (periods) => {
-      const promises = periods.map((period) =>
-        base44.entities.ForecastPeriod.create({ ...period, scenario_id: selectedScenarioId })
-      );
-      return Promise.all(promises);
+    mutationFn: async ({ name, periods, assumptions }) => {
+      if (selectedScenarioId) {
+        return base44.entities.ForecastScenario.update(selectedScenarioId, {
+          scenario_data: periods.map(p => ({
+            year: p.year,
+            calendarYear: p.calendarYear,
+            projected_revenue: p.projected_revenue || 0,
+            projected_cogs: p.projected_cogs || 0,
+            projected_operating_costs: p.projected_operating_costs || 0,
+            projected_tax: p.projected_tax || 0,
+            projected_funding: p.projected_funding || 0,
+            carbon_credits_generated: p.carbon_credits_generated || 0,
+            bng_habitat_units_generated: p.bng_habitat_units_generated || 0,
+          })),
+          assumptions: assumptions
+        });
+      } else {
+        return base44.entities.ForecastScenario.create({
+          project_id: projectId,
+          scenario_type: "YEARLY_30YR",
+          scenario_name: name,
+          scenario_data: periods.map(p => ({
+            year: p.year,
+            calendarYear: p.calendarYear,
+            projected_revenue: p.projected_revenue || 0,
+            projected_cogs: p.projected_cogs || 0,
+            projected_operating_costs: p.projected_operating_costs || 0,
+            projected_tax: p.projected_tax || 0,
+            projected_funding: p.projected_funding || 0,
+            carbon_credits_generated: p.carbon_credits_generated || 0,
+            bng_habitat_units_generated: p.bng_habitat_units_generated || 0,
+          })),
+          assumptions: assumptions
+        });
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["forecastPeriods"] });
-      toast.success("Forecast saved");
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["forecastScenarios"] });
+      setSelectedScenarioId(result.id);
+      setSavedPeriods(result.scenario_data);
+      toast.success(selectedScenarioId ? "Scenario updated successfully" : "Scenario saved successfully");
     },
+    onError: (error) => {
+      toast.error("Failed to save scenario: " + error.message);
+    }
   });
 
   const updatePeriodMutation = useMutation({
     mutationFn: async (period) => {
-      return base44.entities.ForecastPeriod.update(period.id, {
-        projected_revenue: period.projected_revenue,
-        projected_expenses: period.projected_expenses,
-        projected_cash_flow: period.projected_revenue - period.projected_expenses,
-        carbon_credits_generated: period.carbon_credits_generated,
-        bng_habitat_units_generated: period.bng_habitat_units_generated,
-      });
+      const updatedPeriods = savedPeriods.map(p => 
+        p.year === period.year ? period : p
+      );
+      setSavedPeriods(updatedPeriods);
+      
+      if (selectedScenarioId) {
+        return base44.entities.ForecastScenario.update(selectedScenarioId, {
+          scenario_data: updatedPeriods
+        });
+      }
+      return Promise.resolve();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["forecastPeriods"] });
+      queryClient.invalidateQueries({ queryKey: ["forecastScenarios"] });
       toast.success("Period updated");
     },
   });
@@ -184,12 +232,16 @@ export default function YearlyForecastTab({ projectId, project }) {
   };
 
   const forecastData = React.useMemo(() => {
-    if (!project || !revenueStreams || !lineItems) return [];
+    if (!project) return [];
 
     let periods = [];
+    const startYear = new Date(project.start_date).getFullYear();
 
     if (savedPeriods.length > 0) {
-      periods = savedPeriods;
+      periods = savedPeriods.map(p => ({
+        ...p,
+        calendarYear: p.calendarYear || (startYear + (p.year - 1))
+      }));
     } else if (selectedScenario && selectedScenario.assumptions) {
       periods = generateForecastPeriods(
         revenueStreams,
@@ -197,7 +249,10 @@ export default function YearlyForecastTab({ projectId, project }) {
         selectedScenario.assumptions,
         project.start_date,
         years
-      );
+      ).map(p => ({
+        ...p,
+        calendarYear: startYear + (p.year - 1)
+      }));
     } else {
       const defaultAssumptions = {
         carbon_price: 25,
@@ -212,17 +267,14 @@ export default function YearlyForecastTab({ projectId, project }) {
         discount_rate: 0.05,
       };
 
-      periods = generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years);
+      periods = generateForecastPeriods(revenueStreams, lineItems, defaultAssumptions, project.start_date, years)
+        .map(p => ({
+          ...p,
+          calendarYear: startYear + (p.year - 1)
+        }));
     }
-
-    const startYear = new Date(project.start_date).getFullYear();
     
-    return periods
-      .sort((a, b) => (a.year || 0) - (b.year || 0))
-      .map(p => ({
-        ...p,
-        calendarYear: startYear + (p.year - 1)
-      }));
+    return periods.sort((a, b) => (a.year || 0) - (b.year || 0));
   }, [project, revenueStreams, lineItems, selectedScenario, years, savedPeriods]);
 
   // Calculate yearly actuals from transactions
@@ -619,17 +671,24 @@ export default function YearlyForecastTab({ projectId, project }) {
                   )}
                 </>
               )}
-              {selectedScenarioId && savedPeriods.length === 0 && forecastData.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => saveForecastMutation.mutate(forecastData)}
-                  disabled={saveForecastMutation.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saveForecastMutation.isPending ? "Saving..." : "Save Forecast"}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const name = selectedScenario?.scenario_name || prompt("Enter scenario name:");
+                  if (name) {
+                    saveForecastMutation.mutate({
+                      name,
+                      periods: forecastData,
+                      assumptions: selectedScenario?.assumptions || {}
+                    });
+                  }
+                }}
+                disabled={saveForecastMutation.isPending}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saveForecastMutation.isPending ? "Saving..." : (selectedScenarioId ? "Update Scenario" : "Save as Scenario")}
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -637,14 +696,7 @@ export default function YearlyForecastTab({ projectId, project }) {
           <EditableForecastTable
             forecastData={forecastData}
             onUpdatePeriod={(period) => {
-              if (savedPeriods.length > 0) {
-                updatePeriodMutation.mutate(period);
-              } else {
-                const updated = forecastData.map(p => 
-                  p.year === period.year ? { ...p, ...period, projected_cash_flow: period.projected_revenue - period.projected_expenses } : p
-                );
-                setSavedPeriods(updated);
-              }
+              updatePeriodMutation.mutate(period);
             }}
           />
           

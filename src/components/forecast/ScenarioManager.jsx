@@ -7,7 +7,7 @@ import { Plus, Copy, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ScenarioManager({ 
-  scenarios, 
+  scenarios = [], 
   currentScenarioId, 
   onSelectScenario, 
   onSaveScenario, 
@@ -20,11 +20,16 @@ export default function ScenarioManager({
   const [scenarioToDelete, setScenarioToDelete] = useState(null);
 
   const handleSaveNew = () => {
-    if (!scenarioName.trim()) {
+    if (!currentScenarioId && !scenarioName.trim()) {
       toast.error("Please enter a scenario name");
       return;
     }
-    onSaveScenario(scenarioName.trim());
+    
+    const name = currentScenarioId 
+      ? (scenarios.find(s => s.id === currentScenarioId)?.scenario_name || scenarioName.trim())
+      : scenarioName.trim();
+    
+    onSaveScenario(name);
     setScenarioName("");
     setShowSaveDialog(false);
   };
@@ -50,24 +55,32 @@ export default function ScenarioManager({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {scenarios.length > 0 && (
-        <Select value={currentScenarioId || ""} onValueChange={onSelectScenario}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select scenario" />
-          </SelectTrigger>
-          <SelectContent>
-            {scenarios.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      <Select value={currentScenarioId || "none"} onValueChange={(val) => onSelectScenario(val === "none" ? null : val)}>
+        <SelectTrigger className="w-64">
+          <SelectValue placeholder="No scenario selected" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">
+            <span className="text-slate-500 italic">No scenario (default forecast)</span>
+          </SelectItem>
+          {scenarios.map((s) => (
+            <SelectItem key={s.id} value={s.id}>
+              <div className="flex flex-col">
+                <span>{s.scenario_name || s.name}</span>
+                {s.updated_date && (
+                  <span className="text-xs text-slate-400">
+                    Modified: {new Date(s.updated_date).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Button size="sm" onClick={() => setShowSaveDialog(true)}>
         <Save className="h-4 w-4 mr-2" />
-        {currentScenarioId ? "Update Scenario" : "Save as Scenario"}
+        {currentScenarioId ? "Update" : "Save Scenario"}
       </Button>
 
       {currentScenarioId && (
@@ -97,16 +110,23 @@ export default function ScenarioManager({
             <DialogTitle>{currentScenarioId ? "Update Scenario" : "Save New Scenario"}</DialogTitle>
             <DialogDescription>
               {currentScenarioId 
-                ? "Update the current scenario with your changes" 
+                ? `Update "${scenarios.find(s => s.id === currentScenarioId)?.scenario_name}" with your current changes` 
                 : "Enter a name for your forecast scenario"}
             </DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Scenario name (e.g., Base Case, Conservative, Optimistic)"
-            value={scenarioName}
-            onChange={(e) => setScenarioName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSaveNew()}
-          />
+          {!currentScenarioId && (
+            <Input
+              placeholder="Scenario name (e.g., Base Case, Conservative, Optimistic)"
+              value={scenarioName}
+              onChange={(e) => setScenarioName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSaveNew()}
+            />
+          )}
+          {currentScenarioId && (
+            <p className="text-sm text-slate-600">
+              This will update the existing scenario with your current forecast values.
+            </p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
               Cancel
