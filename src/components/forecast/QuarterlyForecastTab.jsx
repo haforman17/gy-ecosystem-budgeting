@@ -45,12 +45,13 @@ export default function QuarterlyForecastTab({ projectId, project }) {
   }, [project, currentYear]);
 
   const quarterlyActuals = React.useMemo(() => {
+    const endYear = selectedYear + forecastYears - 1;
     const quarters = eachQuarterOfInterval({
       start: startOfYear(new Date(selectedYear, 0, 1)),
-      end: endOfYear(new Date(selectedYear, 11, 31)),
+      end: endOfYear(new Date(endYear, 11, 31)),
     });
 
-    return quarters.map((quarterDate, idx) => {
+    return quarters.map((quarterDate) => {
       const qStart = startOfQuarter(quarterDate);
       const qEnd = endOfQuarter(quarterDate);
       
@@ -71,8 +72,11 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "FUNDING_DRAWDOWN")
         .reduce((sum, t) => sum + t.amount, 0);
 
+      const year = quarterDate.getFullYear();
+      const quarterNum = Math.floor((quarterDate.getMonth()) / 3) + 1;
+
       return {
-        quarter: `Q${idx + 1} ${selectedYear}`,
+        quarter: `Q${quarterNum} ${year}`,
         quarterDate: quarterDate,
         actualRevenue: revenue,
         actualExpenses: expenses,
@@ -80,7 +84,7 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         actualNetCashFlow: revenue - expenses + funding,
       };
     });
-  }, [transactions, selectedYear]);
+  }, [transactions, selectedYear, forecastYears]);
 
   const quarterlyForecast = React.useMemo(() => {
     const endYear = selectedYear + forecastYears - 1;
