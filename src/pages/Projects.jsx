@@ -41,6 +41,16 @@ export default function Projects() {
     queryFn: () => base44.entities.LineItem.list(),
   });
 
+  const { data: budgetCategories = [] } = useQuery({
+    queryKey: ["budgetCategories"],
+    queryFn: () => base44.entities.BudgetCategory.list(),
+  });
+
+  const { data: subItems = [] } = useQuery({
+    queryKey: ["subItems"],
+    queryFn: () => base44.entities.SubItem.list(),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (projectId) => {
       await base44.entities.Project.delete(projectId);
@@ -69,8 +79,24 @@ export default function Projects() {
 
   if (isLoading) return <LoadingState message="Loading projects..." />;
 
-  const getProjectBudget = (projectId) =>
-    lineItems.filter((li) => li.project_id === projectId).reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+  const getProjectBudget = (projectId) => {
+    const lineItemsTotal = lineItems
+      .filter((li) => li.project_id === projectId)
+      .reduce((sum, li) => sum + (Number(li.budget_amount) || 0), 0);
+    
+    const categoriesTotal = budgetCategories
+      .filter((bc) => bc.project_id === projectId)
+      .reduce((sum, bc) => sum + (Number(bc.budget_amount) || 0), 0);
+    
+    const subItemsTotal = subItems
+      .filter((si) => {
+        const parentLineItem = lineItems.find((li) => li.id === si.line_item_id);
+        return parentLineItem?.project_id === projectId;
+      })
+      .reduce((sum, si) => sum + (Number(si.budget_amount) || 0), 0);
+    
+    return lineItemsTotal + categoriesTotal + subItemsTotal;
+  };
 
   const handleDragEnd = (result) => {
     if (!result.destination) return;
