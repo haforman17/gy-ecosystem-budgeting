@@ -1,141 +1,77 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
-import { format } from "date-fns";
-import { AlertTriangle, CheckCircle2, Download } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Lock } from "lucide-react";
 import * as XLSX from "xlsx";
 
-export default function BalanceSheetTab({ data, asOfDate }) {
-  if (!data) {
+export default function BalanceSheetTab({ statementsByYear, selectedYears }) {
+  if (!statementsByYear) {
     return (
       <Card>
         <CardContent className="p-8 text-center text-slate-500">
-          No financial data available for the selected period.
+          No transaction data available. Add transactions to generate financial statements.
         </CardContent>
       </Card>
     );
   }
 
-  const exportToCSV = () => {
-    const csvData = [
-      ["Balance Sheet", `As of ${format(asOfDate, "MMM d, yyyy")}`],
-      [],
-      ["ASSETS"],
-      ["Current Assets"],
-      ["Cash and Cash Equivalents", data.assets.currentAssets.cash],
-      ["Accounts Receivable", data.assets.currentAssets.accountsReceivable],
-      ["Work in Progress", data.assets.currentAssets.workInProgress],
-      ["Credit Inventory - Carbon", data.assets.currentAssets.creditInventory.carbon],
-      ["Credit Inventory - BNG Habitat", data.assets.currentAssets.creditInventory.bngHabitat],
-      ["Credit Inventory - BNG Hedgerow", data.assets.currentAssets.creditInventory.bngHedgerow],
-      ["Credit Inventory - Watercourse", data.assets.currentAssets.creditInventory.watercourse],
-      ["Credit Inventory - NFM", data.assets.currentAssets.creditInventory.nfm],
-      ["Total Current Assets", data.assets.currentAssets.totalCurrentAssets],
-      ["Fixed Assets"],
-      ["Land Value", data.assets.fixedAssets.land],
-      ["Equipment", data.assets.fixedAssets.equipment],
-      ["Total Fixed Assets", data.assets.fixedAssets.totalFixedAssets],
-      ["TOTAL ASSETS", data.assets.totalAssets],
-      [],
-      ["LIABILITIES"],
-      ["Current Liabilities"],
-      ["Accounts Payable", data.liabilities.currentLiabilities.accountsPayable],
-      ["Current Portion of Debt", data.liabilities.currentLiabilities.currentDebt],
-      ["Deferred Revenue", data.liabilities.currentLiabilities.deferredRevenue],
-      ["Total Current Liabilities", data.liabilities.currentLiabilities.totalCurrentLiabilities],
-      ["Long-Term Liabilities"],
-      ["Private Debt", data.liabilities.longTermLiabilities.privateDebt],
-      ["Government Debt", data.liabilities.longTermLiabilities.governmentDebt],
-      ["Total Long-Term Liabilities", data.liabilities.longTermLiabilities.totalLongTermLiabilities],
-      ["TOTAL LIABILITIES", data.liabilities.totalLiabilities],
-      [],
-      ["EQUITY"],
-      ["Equity Capital", data.equity.equityCapital],
-      ["Grant Funding", data.equity.grantFunding],
-      ["Retained Earnings", data.equity.retainedEarnings],
-      ["TOTAL EQUITY", data.equity.totalEquity],
-      [],
-      ["TOTAL LIABILITIES + EQUITY", data.totalLiabilitiesAndEquity],
-    ];
-    
-    const csv = csvData.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `balance-sheet-${format(asOfDate, "yyyy-MM-dd")}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
   const exportToExcel = () => {
     const wsData = [
-      ["Balance Sheet", `As of ${format(asOfDate, "MMM d, yyyy")}`],
+      ["Balance Sheet - Year-over-Year Comparison"],
+      [],
+      ["Line Item", ...selectedYears.map(y => `As of Dec 31, ${y}`)],
       [],
       ["ASSETS"],
-      ["Current Assets"],
-      ["Cash and Cash Equivalents", data.assets.currentAssets.cash],
-      ["Accounts Receivable", data.assets.currentAssets.accountsReceivable],
-      ["Work in Progress", data.assets.currentAssets.workInProgress],
-      ["Credit Inventory - Carbon", data.assets.currentAssets.creditInventory.carbon],
-      ["Credit Inventory - BNG Habitat", data.assets.currentAssets.creditInventory.bngHabitat],
-      ["Credit Inventory - BNG Hedgerow", data.assets.currentAssets.creditInventory.bngHedgerow],
-      ["Credit Inventory - Watercourse", data.assets.currentAssets.creditInventory.watercourse],
-      ["Credit Inventory - NFM", data.assets.currentAssets.creditInventory.nfm],
-      ["Total Current Assets", data.assets.currentAssets.totalCurrentAssets],
-      ["Fixed Assets"],
-      ["Land Value", data.assets.fixedAssets.land],
-      ["Equipment", data.assets.fixedAssets.equipment],
-      ["Total Fixed Assets", data.assets.fixedAssets.totalFixedAssets],
-      ["TOTAL ASSETS", data.assets.totalAssets],
+      ["Total Current Assets", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.assets?.currentAssets?.totalCurrentAssets || 0)],
+      ["Total Fixed Assets", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.assets?.fixedAssets?.totalFixedAssets || 0)],
+      ["TOTAL ASSETS", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.assets?.totalAssets || 0)],
       [],
       ["LIABILITIES"],
-      ["Current Liabilities"],
-      ["Accounts Payable", data.liabilities.currentLiabilities.accountsPayable],
-      ["Current Portion of Debt", data.liabilities.currentLiabilities.currentDebt],
-      ["Deferred Revenue", data.liabilities.currentLiabilities.deferredRevenue],
-      ["Total Current Liabilities", data.liabilities.currentLiabilities.totalCurrentLiabilities],
-      ["Long-Term Liabilities"],
-      ["Private Debt", data.liabilities.longTermLiabilities.privateDebt],
-      ["Government Debt", data.liabilities.longTermLiabilities.governmentDebt],
-      ["Total Long-Term Liabilities", data.liabilities.longTermLiabilities.totalLongTermLiabilities],
-      ["TOTAL LIABILITIES", data.liabilities.totalLiabilities],
+      ["Total Current Liabilities", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.liabilities?.currentLiabilities?.totalCurrentLiabilities || 0)],
+      ["Total Long-Term Liabilities", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.liabilities?.longTermLiabilities?.totalLongTermLiabilities || 0)],
+      ["TOTAL LIABILITIES", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.liabilities?.totalLiabilities || 0)],
       [],
       ["EQUITY"],
-      ["Equity Capital", data.equity.equityCapital],
-      ["Grant Funding", data.equity.grantFunding],
-      ["Retained Earnings", data.equity.retainedEarnings],
-      ["TOTAL EQUITY", data.equity.totalEquity],
+      ["TOTAL EQUITY", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.equity?.totalEquity || 0)],
       [],
-      ["TOTAL LIABILITIES + EQUITY", data.totalLiabilitiesAndEquity],
+      ["TOTAL LIABILITIES + EQUITY", ...selectedYears.map(y => statementsByYear[y]?.balanceSheet?.totalLiabilitiesAndEquity || 0)],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance Sheet");
-    XLSX.writeFile(wb, `balance-sheet-${format(asOfDate, "yyyy-MM-dd")}.xlsx`);
+    XLSX.writeFile(wb, `balance-sheet-comparison-${selectedYears.join('-')}.xlsx`);
   };
+
+  // Check if balance sheets balance for all years
+  const balanceChecks = selectedYears.map(year => {
+    const bs = statementsByYear[year]?.balanceSheet;
+    if (!bs) return { year, balances: false, diff: 0 };
+    const diff = Math.abs((bs.assets?.totalAssets || 0) - (bs.totalLiabilitiesAndEquity || 0));
+    return { year, balances: diff < 0.01, diff };
+  });
+
+  const allBalance = balanceChecks.every(check => check.balances);
 
   return (
     <div className="space-y-4">
       {/* Balance Check Alert */}
-      {!data.balances && (
+      {!allBalance && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Balance sheet does not balance. Assets: {formatCurrency(data.assets.totalAssets)}, Liabilities + Equity:{" "}
-            {formatCurrency(data.totalLiabilitiesAndEquity)}
+            Balance sheet does not balance for some years. Check transaction data integrity.
           </AlertDescription>
         </Alert>
       )}
 
-      {data.balances && (
+      {allBalance && (
         <Alert className="bg-emerald-50 border-emerald-200">
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          <AlertDescription className="text-emerald-700">Balance sheet balances correctly</AlertDescription>
+          <AlertDescription className="text-emerald-700">All balance sheets balance correctly across selected years</AlertDescription>
         </Alert>
       )}
 
@@ -143,222 +79,147 @@ export default function BalanceSheetTab({ data, asOfDate }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Balance Sheet</CardTitle>
-              <p className="text-sm text-slate-500 mt-1">As of {format(asOfDate, "MMM d, yyyy")}</p>
+              <div className="flex items-center gap-2">
+                <CardTitle>Balance Sheet</CardTitle>
+                <Lock className="h-4 w-4 text-slate-400" title="Read-only - auto-generated from transactions" />
+              </div>
+              <p className="text-sm text-slate-500 mt-1">Year-over-Year Comparison (As of Dec 31)</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToExcel}>
-                <Download className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
+              <Download className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableBody>
-              {/* ASSETS SECTION */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-bold text-slate-900 text-lg">
-                  ASSETS
-                </TableCell>
-              </TableRow>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold text-slate-700">Line Item</TableHead>
+                  {selectedYears.map(year => (
+                    <TableHead key={year} className="text-right font-semibold text-emerald-700">
+                      {year}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* ASSETS SECTION */}
+                <TableRow className="bg-slate-50">
+                  <TableCell className="font-bold text-slate-900 text-lg">ASSETS</TableCell>
+                  {selectedYears.map(year => <TableCell key={year} />)}
+                </TableRow>
 
-              {/* Current Assets */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-semibold text-slate-700 pl-4">
-                  Current Assets
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Cash and Cash Equivalents</TableCell>
-                <TableCell className="text-right">{formatCurrency(data.assets.currentAssets.cash)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Accounts Receivable</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.accountsReceivable)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Work in Progress - Restoration Costs</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.workInProgress)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Credit Inventory - Carbon</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.creditInventory.carbon)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Credit Inventory - BNG Habitat</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.creditInventory.bngHabitat)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Credit Inventory - BNG Hedgerow</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.creditInventory.bngHedgerow)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Credit Inventory - Watercourse</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.creditInventory.watercourse)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Credit Inventory - NFM</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.creditInventory.nfm)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="font-semibold border-t">
-                <TableCell className="pl-4">Total Current Assets</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.currentAssets.totalCurrentAssets)}
-                </TableCell>
-              </TableRow>
+                {/* Current Assets */}
+                <TableRow>
+                  <TableCell className="pl-8">Cash and Cash Equivalents</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.assets?.currentAssets?.cash || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                <TableRow className="font-semibold border-t">
+                  <TableCell className="pl-4">Total Current Assets</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.assets?.currentAssets?.totalCurrentAssets || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* Fixed Assets */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-semibold text-slate-700 pl-4 pt-4">
-                  Fixed Assets
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Land Value</TableCell>
-                <TableCell className="text-right">{formatCurrency(data.assets.fixedAssets.land)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Equipment</TableCell>
-                <TableCell className="text-right">{formatCurrency(data.assets.fixedAssets.equipment)}</TableCell>
-              </TableRow>
-              <TableRow className="font-semibold border-t">
-                <TableCell className="pl-4">Total Fixed Assets</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.assets.fixedAssets.totalFixedAssets)}
-                </TableCell>
-              </TableRow>
+                {/* Fixed Assets */}
+                <TableRow className="font-semibold border-t">
+                  <TableCell className="pl-4">Total Fixed Assets</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.assets?.fixedAssets?.totalFixedAssets || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* Total Assets */}
-              <TableRow className="font-bold bg-emerald-50 border-t-2 border-slate-300">
-                <TableCell className="text-lg">TOTAL ASSETS</TableCell>
-                <TableCell className="text-right text-lg text-emerald-600">
-                  {formatCurrency(data.assets.totalAssets)}
-                </TableCell>
-              </TableRow>
+                {/* Total Assets */}
+                <TableRow className="font-bold bg-emerald-50 border-t-2 border-slate-300">
+                  <TableCell className="text-lg">TOTAL ASSETS</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right text-lg text-emerald-600">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.assets?.totalAssets || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* LIABILITIES SECTION */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-bold text-slate-900 text-lg pt-6">
-                  LIABILITIES
-                </TableCell>
-              </TableRow>
+                {/* LIABILITIES SECTION */}
+                <TableRow className="bg-slate-50">
+                  <TableCell className="font-bold text-slate-900 text-lg pt-6">LIABILITIES</TableCell>
+                  {selectedYears.map(year => <TableCell key={year} />)}
+                </TableRow>
 
-              {/* Current Liabilities */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-semibold text-slate-700 pl-4">
-                  Current Liabilities
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Accounts Payable</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.currentLiabilities.accountsPayable)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Current Portion of Long-Term Debt</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.currentLiabilities.currentDebt)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Deferred Revenue</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.currentLiabilities.deferredRevenue)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="font-semibold border-t">
-                <TableCell className="pl-4">Total Current Liabilities</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.currentLiabilities.totalCurrentLiabilities)}
-                </TableCell>
-              </TableRow>
+                <TableRow className="font-semibold border-t">
+                  <TableCell className="pl-4">Total Current Liabilities</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.liabilities?.currentLiabilities?.totalCurrentLiabilities || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* Long-Term Liabilities */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-semibold text-slate-700 pl-4 pt-4">
-                  Long-Term Liabilities
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Private Debt</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.longTermLiabilities.privateDebt)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Government Debt</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.longTermLiabilities.governmentDebt)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="font-semibold border-t">
-                <TableCell className="pl-4">Total Long-Term Liabilities</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(data.liabilities.longTermLiabilities.totalLongTermLiabilities)}
-                </TableCell>
-              </TableRow>
+                <TableRow className="font-semibold border-t">
+                  <TableCell className="pl-4">Total Long-Term Liabilities</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.liabilities?.longTermLiabilities?.totalLongTermLiabilities || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* Total Liabilities */}
-              <TableRow className="font-bold bg-amber-50 border-t-2">
-                <TableCell className="text-lg">TOTAL LIABILITIES</TableCell>
-                <TableCell className="text-right text-lg">{formatCurrency(data.liabilities.totalLiabilities)}</TableCell>
-              </TableRow>
+                {/* Total Liabilities */}
+                <TableRow className="font-bold bg-amber-50 border-t-2">
+                  <TableCell className="text-lg">TOTAL LIABILITIES</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right text-lg">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.liabilities?.totalLiabilities || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* EQUITY SECTION */}
-              <TableRow className="bg-slate-50">
-                <TableCell colSpan={2} className="font-bold text-slate-900 text-lg pt-6">
-                  EQUITY
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Equity Capital</TableCell>
-                <TableCell className="text-right">{formatCurrency(data.equity.equityCapital)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Grant Funding</TableCell>
-                <TableCell className="text-right">{formatCurrency(data.equity.grantFunding)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="pl-8">Retained Earnings</TableCell>
-                <TableCell className={`text-right ${data.equity.retainedEarnings >= 0 ? "" : "text-red-600"}`}>
-                  {formatCurrency(data.equity.retainedEarnings)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="font-bold bg-blue-50 border-t-2">
-                <TableCell className="text-lg">TOTAL EQUITY</TableCell>
-                <TableCell className="text-right text-lg text-blue-600">
-                  {formatCurrency(data.equity.totalEquity)}
-                </TableCell>
-              </TableRow>
+                {/* EQUITY SECTION */}
+                <TableRow className="bg-slate-50">
+                  <TableCell className="font-bold text-slate-900 text-lg pt-6">EQUITY</TableCell>
+                  {selectedYears.map(year => <TableCell key={year} />)}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="pl-8">Retained Earnings</TableCell>
+                  {selectedYears.map(year => {
+                    const re = statementsByYear[year]?.balanceSheet?.equity?.retainedEarnings || 0;
+                    return (
+                      <TableCell key={year} className={`text-right ${re >= 0 ? "" : "text-red-600"}`}>
+                        {formatCurrency(re)}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow className="font-bold bg-blue-50 border-t-2">
+                  <TableCell className="text-lg">TOTAL EQUITY</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right text-lg text-blue-600">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.equity?.totalEquity || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
-              {/* Total Liabilities + Equity */}
-              <TableRow className="font-bold bg-slate-100 border-t-4 border-slate-400">
-                <TableCell className="text-lg">TOTAL LIABILITIES + EQUITY</TableCell>
-                <TableCell className="text-right text-lg">{formatCurrency(data.totalLiabilitiesAndEquity)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                {/* Total Liabilities + Equity */}
+                <TableRow className="font-bold bg-slate-100 border-t-4 border-slate-400">
+                  <TableCell className="text-lg">TOTAL LIABILITIES + EQUITY</TableCell>
+                  {selectedYears.map(year => (
+                    <TableCell key={year} className="text-right text-lg">
+                      {formatCurrency(statementsByYear[year]?.balanceSheet?.totalLiabilitiesAndEquity || 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
