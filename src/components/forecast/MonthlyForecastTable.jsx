@@ -146,18 +146,22 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
 
   const downloadTemplate = () => {
     const templateData = [
-      ["Monthly Forecast Template", `Year: ${year}`],
+      ["Monthly Forecast Upload Template", `Year: ${year}`],
       [],
-      ["INSTRUCTIONS: Fill in the editable columns (Revenue, COGS, Operating Costs, Tax, Funding). Do not modify the Month column. Calculated columns (Gross Margin, Net Income Before Tax, Net Income, Net Cash Flow) will auto-calculate."],
+      ["INSTRUCTIONS:"],
+      ["1. Fill in ONLY the editable columns: Revenue, COGS, Operating Costs, Tax, Funding"],
+      ["2. Do NOT modify the Month column"],
+      ["3. Do NOT add calculated columns (Gross Margin, Net Income Before Tax, Net Income, Net Cash Flow will auto-calculate)"],
+      ["4. Keep column headers exactly as shown"],
       [],
-      ["Month", "Forecast Revenue", "Forecast COGS", "Forecast Operating Costs", "Forecast Tax", "Forecast Funding"],
+      ["Month", "Revenue", "COGS", "Operating Costs", "Tax", "Funding"],
       ...editableData.map((m) => [
         m.month,
-        m.forecastRevenue || 0,
-        m.forecastCOGS || 0,
-        m.forecastOperatingCosts || 0,
-        m.forecastTax || 0,
-        m.forecastFunding || 0,
+        m.forecastRevenue || "",
+        m.forecastCOGS || "",
+        m.forecastOperatingCosts || "",
+        m.forecastTax || "",
+        m.forecastFunding || "",
       ]),
     ];
 

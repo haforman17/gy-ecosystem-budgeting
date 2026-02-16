@@ -153,11 +153,11 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       ["Quarter", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
       ...editableData.map((q) => [
         q.quarter,
-        q.forecastRevenue || 0,
-        q.forecastCOGS || 0,
-        q.forecastOperatingCosts || 0,
-        q.forecastTax || 0,
-        q.forecastFunding || 0,
+        q.forecastRevenue || "",
+        q.forecastCOGS || "",
+        q.forecastOperatingCosts || "",
+        q.forecastTax || "",
+        q.forecastFunding || "",
       ]),
     ];
 
