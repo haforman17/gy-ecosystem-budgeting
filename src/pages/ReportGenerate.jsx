@@ -348,7 +348,7 @@ export default function ReportGenerate() {
             }
             
             const itemVariance = (item.actual_amount || 0) - (item.budget_amount || 0);
-            doc.text(item.category.substring(0, 25), 25, y);
+            doc.text((item.name || item.tier_1_category || 'Budget Item').substring(0, 25), 25, y);
             doc.text((item.budget_amount || 0).toLocaleString(), 105, y, { align: 'right' });
             doc.text((item.actual_amount || 0).toLocaleString(), 140, y, { align: 'right' });
             doc.text(itemVariance.toLocaleString(), 175, y, { align: 'right' });

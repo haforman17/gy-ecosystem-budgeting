@@ -69,9 +69,9 @@ import ProjectMonthlyForecast from './pages/ProjectMonthlyForecast';
 import ProjectNew from './pages/ProjectNew';
 import ProjectQuarterlyForecast from './pages/ProjectQuarterlyForecast';
 import Projects from './pages/Projects';
+import ReportBuilder from './pages/ReportBuilder';
 import ReportGenerate from './pages/ReportGenerate';
 import Reports from './pages/Reports';
-import ReportBuilder from './pages/ReportBuilder';
 import __Layout from './Layout.jsx';
 
 
@@ -98,9 +98,9 @@ export const PAGES = {
     "ProjectNew": ProjectNew,
     "ProjectQuarterlyForecast": ProjectQuarterlyForecast,
     "Projects": Projects,
+    "ReportBuilder": ReportBuilder,
     "ReportGenerate": ReportGenerate,
     "Reports": Reports,
-    "ReportBuilder": ReportBuilder,
 }
 
 export const pagesConfig = {
