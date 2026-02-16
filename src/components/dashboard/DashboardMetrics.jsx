@@ -8,7 +8,7 @@ export default function DashboardMetrics({ projects, lineItems, revenueStreams, 
     .filter((t) => t.transaction_type === "EXPENSE")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const totalRevenueForecast = revenueStreams.reduce(
-    (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.price_per_unit || 0)),
+    (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0)),
     0
   );
   const totalFundingDrawn = transactions
