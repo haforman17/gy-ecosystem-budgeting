@@ -5,31 +5,117 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
 import { Save, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import ScenarioManager from "@/components/forecast/ScenarioManager";
 import * as XLSX from "xlsx";
 
 export default function MonthlyForecastTable({ data, year, projectId }) {
+  const queryClient = useQueryClient();
   const [editableData, setEditableData] = useState(data);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
+  const [currentScenarioId, setCurrentScenarioId] = useState(null);
+
+  const { data: scenarios = [] } = useQuery({
+    queryKey: ["monthlyScenarios", projectId, year],
+    queryFn: () => base44.entities.ForecastScenario.filter({ 
+      project_id: projectId,
+      scenario_type: "MONTHLY",
+      year: year 
+    }),
+    enabled: !!projectId,
+  });
+
+  const saveScenarioMutation = useMutation({
+    mutationFn: async ({ name, data }) => {
+      if (currentScenarioId) {
+        return base44.entities.ForecastScenario.update(currentScenarioId, {
+          scenario_data: data,
+          updated_date: new Date().toISOString()
+        });
+      } else {
+        return base44.entities.ForecastScenario.create({
+          project_id: projectId,
+          scenario_type: "MONTHLY",
+          year: year,
+          scenario_name: name,
+          scenario_data: data
+        });
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      setCurrentScenarioId(result.id);
+      toast.success("Scenario saved successfully");
+    },
+  });
+
+  const duplicateScenarioMutation = useMutation({
+    mutationFn: async (scenario) => {
+      return base44.entities.ForecastScenario.create({
+        project_id: projectId,
+        scenario_type: "MONTHLY",
+        year: year,
+        scenario_name: `${scenario.scenario_name} (Copy)`,
+        scenario_data: scenario.scenario_data
+      });
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      setCurrentScenarioId(result.id);
+      toast.success("Scenario duplicated successfully");
+    },
+  });
+
+  const deleteScenarioMutation = useMutation({
+    mutationFn: (id) => base44.entities.ForecastScenario.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthlyScenarios"] });
+      setCurrentScenarioId(null);
+      toast.success("Scenario deleted");
+    },
+  });
+
+  React.useEffect(() => {
+    setEditableData(data);
+  }, [data]);
+
+  React.useEffect(() => {
+    if (currentScenarioId) {
+      const scenario = scenarios.find(s => s.id === currentScenarioId);
+      if (scenario && scenario.scenario_data) {
+        setEditableData(scenario.scenario_data);
+      }
+    }
+  }, [currentScenarioId, scenarios]);
 
   const handleCellChange = (index, field, value) => {
     const updated = [...editableData];
-    updated[index] = {
-      ...updated[index],
-      [field]: parseFloat(value) || 0,
-      forecastNetCashFlow:
-        field === "forecastRevenue"
-          ? parseFloat(value || 0) - updated[index].forecastExpenses
-          : field === "forecastExpenses"
-          ? updated[index].forecastRevenue - parseFloat(value || 0)
-          : updated[index].forecastNetCashFlow,
-    };
+    updated[index][field] = parseFloat(value) || 0;
+    
+    const grossMargin = updated[index].forecastRevenue - (updated[index].forecastCOGS || 0);
+    const netIncomeBeforeTax = grossMargin - (updated[index].forecastOperatingCosts || 0);
+    const netIncome = netIncomeBeforeTax - (updated[index].forecastTax || 0);
+    updated[index].forecastNetCashFlow = netIncome + (updated[index].forecastFunding || 0);
+    
     setEditableData(updated);
   };
 
-  const handleSave = () => {
-    // TODO: Save to database if needed
-    setIsEditing(false);
-    alert("Forecast saved successfully");
+  const handleSaveScenario = (name) => {
+    saveScenarioMutation.mutate({ name, data: editableData });
+  };
+
+  const handleSelectScenario = (scenarioId) => {
+    setCurrentScenarioId(scenarioId);
+  };
+
+  const handleDuplicateScenario = (scenario) => {
+    duplicateScenarioMutation.mutate(scenario);
+  };
+
+  const handleDeleteScenario = (id) => {
+    deleteScenarioMutation.mutate(id);
   };
 
   const downloadTemplate = () => {
@@ -145,45 +231,45 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <CardTitle>Monthly Forecast - {year}</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={downloadTemplate}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Template
-            </Button>
-            <label>
-              <Button size="sm" variant="outline" asChild>
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </label>
-            {isEditing ? (
-              <Button size="sm" onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                Edit Forecast
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ScenarioManager
+              scenarios={scenarios}
+              currentScenarioId={currentScenarioId}
+              onSelectScenario={handleSelectScenario}
+              onSaveScenario={handleSaveScenario}
+              onDuplicateScenario={handleDuplicateScenario}
+              onDeleteScenario={handleDeleteScenario}
+            />
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={downloadTemplate}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download Template
+          </Button>
+          <label>
+            <Button size="sm" variant="outline" asChild>
+              <span>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Template
+              </span>
+            </Button>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+          <Button size="sm" variant="outline" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -197,62 +283,64 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {editableData.map((month, idx) => (
-                <TableRow key={idx}>
-                  <TableCell className="font-medium">{month.month}</TableCell>
+              {editableData.map((month, idx) => {
+                const grossMargin = month.forecastRevenue - (month.forecastCOGS || 0);
+                const netIncomeBeforeTax = grossMargin - (month.forecastOperatingCosts || 0);
+                const netIncome = netIncomeBeforeTax - (month.forecastTax || 0);
+                const netCashFlow = netIncome + (month.forecastFunding || 0);
+                
+                return (
+                  <TableRow key={idx}>
+                    <TableCell className="font-medium">{month.month}</TableCell>
                   <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={month.forecastRevenue}
-                        onChange={(e) => handleCellChange(idx, "forecastRevenue", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-emerald-600">{formatCurrency(month.forecastRevenue)}</span>
-                    )}
+                    <Input
+                      type="number"
+                      value={month.forecastRevenue}
+                      onChange={(e) => handleCellChange(idx, "forecastRevenue", e.target.value)}
+                      className="w-32 text-right"
+                    />
                   </TableCell>
                   <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={month.forecastExpenses}
-                        onChange={(e) => handleCellChange(idx, "forecastExpenses", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      formatCurrency(month.forecastExpenses)
-                    )}
+                    <Input
+                      type="number"
+                      value={month.forecastCOGS || 0}
+                      onChange={(e) => handleCellChange(idx, "forecastCOGS", e.target.value)}
+                      className="w-32 text-right"
+                    />
                   </TableCell>
+                  <TableCell className="text-right text-slate-500 italic">{formatCurrency(grossMargin)}</TableCell>
                   <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={month.forecastFunding || 0}
-                        onChange={(e) => handleCellChange(idx, "forecastFunding", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-blue-600">{formatCurrency(month.forecastFunding || 0)}</span>
-                    )}
+                    <Input
+                      type="number"
+                      value={month.forecastOperatingCosts || 0}
+                      onChange={(e) => handleCellChange(idx, "forecastOperatingCosts", e.target.value)}
+                      className="w-32 text-right"
+                    />
                   </TableCell>
+                  <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncomeBeforeTax)}</TableCell>
                   <TableCell className="text-right">
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={month.forecastTax || 0}
-                        onChange={(e) => handleCellChange(idx, "forecastTax", e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    ) : (
-                      <span className="text-orange-600">{formatCurrency(month.forecastTax || 0)}</span>
-                    )}
+                    <Input
+                      type="number"
+                      value={month.forecastTax || 0}
+                      onChange={(e) => handleCellChange(idx, "forecastTax", e.target.value)}
+                      className="w-32 text-right"
+                    />
                   </TableCell>
-                  <TableCell className={`text-right ${month.forecastNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {formatCurrency(month.forecastNetCashFlow)}
+                  <TableCell className="text-right text-slate-500 italic">{formatCurrency(netIncome)}</TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      value={month.forecastFunding || 0}
+                      onChange={(e) => handleCellChange(idx, "forecastFunding", e.target.value)}
+                      className="w-32 text-right"
+                    />
+                  </TableCell>
+                  <TableCell className={`text-right font-medium italic ${netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {formatCurrency(netCashFlow)}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               <TableRow className="bg-slate-100 font-bold border-t-2">
                 <TableCell>TOTAL</TableCell>
                 <TableCell className="text-right text-emerald-600">{formatCurrency(totals.revenue)}</TableCell>
