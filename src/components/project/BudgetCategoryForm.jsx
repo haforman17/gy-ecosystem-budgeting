@@ -52,6 +52,7 @@ export default function BudgetCategoryForm({ projectId, category, onClose }) {
     tier_1_category: category?.tier_1_category || "",
     tier_2_category: category?.tier_2_category || "",
     tier_3_category: category?.tier_3_category || "",
+    cost_type: category?.cost_type || "",
     name: category?.name || "",
     description: category?.description || "",
     budget_amount: category?.budget_amount || 0,
@@ -97,6 +98,22 @@ export default function BudgetCategoryForm({ projectId, category, onClose }) {
           <DialogTitle>{category ? "Edit Category" : "New Category"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="cost_type">Cost Type *</Label>
+            <Select
+              value={formData.cost_type}
+              onValueChange={(value) => setFormData({ ...formData, cost_type: value })}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select cost type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OP_COSTS">Operating Costs</SelectItem>
+                <SelectItem value="COGS">Cost of Goods Sold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="tier_1_category">Tier 1 Category *</Label>

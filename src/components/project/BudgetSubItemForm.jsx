@@ -52,6 +52,7 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
     tier_1_category: subItem?.tier_1_category || "",
     tier_2_category: subItem?.tier_2_category || "",
     tier_3_category: subItem?.tier_3_category || "",
+    cost_type: subItem?.cost_type || "",
     name: subItem?.name || "",
     description: subItem?.description || "",
     budget_amount: subItem?.budget_amount || 0,
@@ -100,6 +101,22 @@ export default function BudgetSubItemForm({ lineItemId, subItem, onClose }) {
           <DialogTitle>{subItem ? "Edit Sub-item" : "New Sub-item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="cost_type">Cost Type *</Label>
+            <Select
+              value={formData.cost_type}
+              onValueChange={(value) => setFormData({ ...formData, cost_type: value })}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select cost type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OP_COSTS">Operating Costs</SelectItem>
+                <SelectItem value="COGS">Cost of Goods Sold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="tier_1_category">Tier 1 Category *</Label>
