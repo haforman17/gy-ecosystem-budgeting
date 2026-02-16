@@ -196,6 +196,7 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                   )}
                   {type === "EXPENSE" && (
                     <>
+                      <TableHead className="text-xs font-semibold text-slate-500 uppercase">Cost Type</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Tier 1</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-500 uppercase">Tier 2</TableHead>
                     </>
@@ -235,6 +236,13 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                     )}
                     {type === "EXPENSE" && (
                       <>
+                        <TableCell className="text-xs">
+                          {tx.cost_type ? (
+                            <span className="font-semibold text-white bg-slate-600 px-2 py-0.5 rounded">
+                              {tx.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
+                            </span>
+                          ) : "—"}
+                        </TableCell>
                         <TableCell className="text-xs text-slate-600">{getLineItemTier1(tx)}</TableCell>
                         <TableCell className="text-xs text-slate-600">{getLineItemTier2(tx)}</TableCell>
                       </>
