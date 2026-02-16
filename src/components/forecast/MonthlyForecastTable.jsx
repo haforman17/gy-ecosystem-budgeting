@@ -181,17 +181,29 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      // Find the header row (should contain "Month", "Forecast Revenue", "Forecast Expenses")
-      let headerRowIndex = -1;
-      for (let i = 0; i < jsonData.length; i++) {
-        if (jsonData[i][0] === "Month" && jsonData[i][1] === "Forecast Revenue") {
-          headerRowIndex = i;
-          break;
-        }
-      }
+      const headerRowIndex = jsonData.findIndex((row) =>
+        row[0] && row[0].toString().toLowerCase() === "month"
+      );
 
       if (headerRowIndex === -1) {
-        toast.error("Invalid file format. Please use the downloaded template.");
+        toast.error("Template format invalid. Please use the official Forecast Upload Template.");
+        e.target.value = "";
+        return;
+      }
+
+      const headers = jsonData[headerRowIndex].map(h => h.toString().trim().toLowerCase());
+      const expectedHeaders = ["month", "revenue", "cogs", "operating costs", "tax", "funding"];
+      
+      const monthIdx = headers.indexOf("month");
+      const revenueIdx = headers.indexOf("revenue");
+      const cogsIdx = headers.indexOf("cogs");
+      const opCostsIdx = headers.indexOf("operating costs");
+      const taxIdx = headers.indexOf("tax");
+      const fundingIdx = headers.indexOf("funding");
+
+      if (monthIdx === -1 || revenueIdx === -1 || cogsIdx === -1 || opCostsIdx === -1 || taxIdx === -1 || fundingIdx === -1) {
+        const missing = expectedHeaders.filter(h => !headers.includes(h));
+        toast.error(`Template format invalid. Missing required columns: ${missing.join(", ")}. Please use the official Forecast Upload Template.`);
         e.target.value = "";
         return;
       }
@@ -199,28 +211,35 @@ export default function MonthlyForecastTable({ data, year, projectId }) {
       const updatedData = editableData.map((month) => {
         const matchingRow = jsonData
           .slice(headerRowIndex + 1)
-          .find((row) => row[0] === month.month);
+          .find((row) => row[monthIdx] && row[monthIdx].toString().trim() === month.month);
 
         if (matchingRow) {
+          const revenue = matchingRow[revenueIdx];
+          const cogs = matchingRow[cogsIdx];
+          const opCosts = matchingRow[opCostsIdx];
+          const tax = matchingRow[taxIdx];
+          const funding = matchingRow[fundingIdx];
+
           return {
             ...month,
-            forecastRevenue: parseFloat(matchingRow[1]) || month.forecastRevenue,
-            forecastCOGS: parseFloat(matchingRow[2]) || (month.forecastCOGS || 0),
-            forecastOperatingCosts: parseFloat(matchingRow[3]) || (month.forecastOperatingCosts || 0),
-            forecastTax: parseFloat(matchingRow[4]) || (month.forecastTax || 0),
-            forecastFunding: parseFloat(matchingRow[5]) || (month.forecastFunding || 0),
+            forecastRevenue: (revenue !== undefined && revenue !== "") ? parseFloat(revenue) : month.forecastRevenue,
+            forecastCOGS: (cogs !== undefined && cogs !== "") ? parseFloat(cogs) : (month.forecastCOGS || 0),
+            forecastOperatingCosts: (opCosts !== undefined && opCosts !== "") ? parseFloat(opCosts) : (month.forecastOperatingCosts || 0),
+            forecastTax: (tax !== undefined && tax !== "") ? parseFloat(tax) : (month.forecastTax || 0),
+            forecastFunding: (funding !== undefined && funding !== "") ? parseFloat(funding) : (month.forecastFunding || 0),
           };
         }
         return month;
       });
 
       setEditableData(updatedData);
-      toast.success("Forecast data uploaded successfully!");
+      toast.success("Bulk forecast uploaded successfully. Calculated fields have been updated.");
+      e.target.value = "";
     } catch (error) {
+      console.error("Upload error:", error);
       toast.error("Failed to process file. Please check the format and try again.");
+      e.target.value = "";
     }
-
-    e.target.value = "";
   };
 
   const exportToExcel = () => {
