@@ -146,11 +146,15 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
 
   const downloadTemplate = () => {
     const templateData = [
-      ["Quarterly Forecast Template", `Year: ${year}`],
+      ["Quarterly Forecast Upload Template", `Year: ${year}`],
       [],
-      ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Quarter column."],
+      ["INSTRUCTIONS:"],
+      ["1. Fill in ONLY the editable columns: Revenue, COGS, Operating Costs, Tax, Funding"],
+      ["2. Do NOT modify the Quarter column"],
+      ["3. Do NOT add calculated columns (Gross Margin, Net Income Before Tax, Net Income, Net Cash Flow will auto-calculate)"],
+      ["4. Keep column headers exactly as shown"],
       [],
-      ["Quarter", "Forecast Revenue", "Forecast COGS", "Forecast Gross Margin", "Forecast Operating Costs", "Forecast Net Income Before Tax", "Forecast Tax", "Forecast Net Income", "Forecast Funding", "Forecast Net Cash Flow"],
+      ["Quarter", "Revenue", "COGS", "Operating Costs", "Tax", "Funding"],
       ...editableData.map((q) => [
         q.quarter,
         q.forecastRevenue || "",
@@ -162,7 +166,7 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(templateData);
-    ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    ws['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 15 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, `quarterly-forecast-template-${year}.xlsx`);
@@ -178,16 +182,29 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      let headerRowIndex = -1;
-      for (let i = 0; i < jsonData.length; i++) {
-        if (jsonData[i][0] === "Quarter" && jsonData[i][1] === "Forecast Revenue") {
-          headerRowIndex = i;
-          break;
-        }
-      }
+      const headerRowIndex = jsonData.findIndex((row) =>
+        row[0] && row[0].toString().toLowerCase() === "quarter"
+      );
 
       if (headerRowIndex === -1) {
-        toast.error("Invalid file format. Please use the downloaded template.");
+        toast.error("Template format invalid. Please use the official Forecast Upload Template.");
+        e.target.value = "";
+        return;
+      }
+
+      const headers = jsonData[headerRowIndex].map(h => h.toString().trim().toLowerCase());
+      const expectedHeaders = ["quarter", "revenue", "cogs", "operating costs", "tax", "funding"];
+      
+      const quarterIdx = headers.indexOf("quarter");
+      const revenueIdx = headers.indexOf("revenue");
+      const cogsIdx = headers.indexOf("cogs");
+      const opCostsIdx = headers.indexOf("operating costs");
+      const taxIdx = headers.indexOf("tax");
+      const fundingIdx = headers.indexOf("funding");
+
+      if (quarterIdx === -1 || revenueIdx === -1 || cogsIdx === -1 || opCostsIdx === -1 || taxIdx === -1 || fundingIdx === -1) {
+        const missing = expectedHeaders.filter(h => !headers.includes(h));
+        toast.error(`Template format invalid. Missing required columns: ${missing.join(", ")}. Please use the official Forecast Upload Template.`);
         e.target.value = "";
         return;
       }
@@ -195,28 +212,35 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       const updatedData = editableData.map((quarter) => {
         const matchingRow = jsonData
           .slice(headerRowIndex + 1)
-          .find((row) => row[0] === quarter.quarter);
+          .find((row) => row[quarterIdx] && row[quarterIdx].toString().trim() === quarter.quarter);
 
         if (matchingRow) {
+          const revenue = matchingRow[revenueIdx];
+          const cogs = matchingRow[cogsIdx];
+          const opCosts = matchingRow[opCostsIdx];
+          const tax = matchingRow[taxIdx];
+          const funding = matchingRow[fundingIdx];
+
           return {
             ...quarter,
-            forecastRevenue: parseFloat(matchingRow[1]) || quarter.forecastRevenue,
-            forecastCOGS: parseFloat(matchingRow[2]) || (quarter.forecastCOGS || 0),
-            forecastOperatingCosts: parseFloat(matchingRow[3]) || (quarter.forecastOperatingCosts || 0),
-            forecastTax: parseFloat(matchingRow[4]) || (quarter.forecastTax || 0),
-            forecastFunding: parseFloat(matchingRow[5]) || (quarter.forecastFunding || 0),
+            forecastRevenue: (revenue !== undefined && revenue !== "") ? parseFloat(revenue) : quarter.forecastRevenue,
+            forecastCOGS: (cogs !== undefined && cogs !== "") ? parseFloat(cogs) : (quarter.forecastCOGS || 0),
+            forecastOperatingCosts: (opCosts !== undefined && opCosts !== "") ? parseFloat(opCosts) : (quarter.forecastOperatingCosts || 0),
+            forecastTax: (tax !== undefined && tax !== "") ? parseFloat(tax) : (quarter.forecastTax || 0),
+            forecastFunding: (funding !== undefined && funding !== "") ? parseFloat(funding) : (quarter.forecastFunding || 0),
           };
         }
         return quarter;
       });
 
       setEditableData(updatedData);
-      toast.success("Forecast data uploaded successfully!");
+      toast.success("Bulk forecast uploaded successfully. Calculated fields have been updated.");
+      e.target.value = "";
     } catch (error) {
+      console.error("Upload error:", error);
       toast.error("Failed to process file. Please check the format and try again.");
+      e.target.value = "";
     }
-
-    e.target.value = "";
   };
 
   const exportToExcel = () => {
