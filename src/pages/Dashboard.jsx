@@ -80,7 +80,13 @@ export default function Dashboard() {
 
       {/* Projects Table */}
       {projects.length > 0 ? (
-        <ProjectsTable projects={projects} lineItems={lineItems} transactions={transactions} />
+        <ProjectsTable 
+          projects={projects} 
+          lineItems={lineItems} 
+          budgetCategories={budgetCategories}
+          subItems={subItems}
+          transactions={transactions} 
+        />
       ) : (
         <EmptyState
           icon={FolderTree}

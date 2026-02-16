@@ -6,14 +6,30 @@ import { StatusBadge, getLabel } from "../shared/StatusBadge";
 import { formatCurrency } from "../shared/CurrencyFormat";
 import { ChevronRight } from "lucide-react";
 
-export default function ProjectsTable({ projects, lineItems, transactions }) {
-  const getProjectBudget = (projectId) =>
-    lineItems.filter((li) => li.project_id === projectId).reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+export default function ProjectsTable({ projects, lineItems, budgetCategories, subItems, transactions }) {
+  const getProjectBudget = (projectId) => {
+    const lineItemsTotal = lineItems
+      .filter((li) => li.project_id === projectId)
+      .reduce((sum, li) => sum + (Number(li.budget_amount) || 0), 0);
+    
+    const categoriesTotal = (budgetCategories || [])
+      .filter((bc) => bc.project_id === projectId)
+      .reduce((sum, bc) => sum + (Number(bc.budget_amount) || 0), 0);
+    
+    const subItemsTotal = (subItems || [])
+      .filter((si) => {
+        const parentLineItem = lineItems.find((li) => li.id === si.line_item_id);
+        return parentLineItem?.project_id === projectId;
+      })
+      .reduce((sum, si) => sum + (Number(si.budget_amount) || 0), 0);
+    
+    return lineItemsTotal + categoriesTotal + subItemsTotal;
+  };
 
   const getProjectSpend = (projectId) =>
-    transactions
+    (transactions || [])
       .filter((t) => t.project_id === projectId && t.transaction_type === "EXPENSE")
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   return (
     <Card className="border-0 shadow-sm">
