@@ -125,6 +125,7 @@ export default function BudgetBuilderTab({ projectId }) {
     categories.forEach((cat) => {
       exportData.push({
         "Type": "Category",
+        "Cost Type": cat.cost_type === "OP_COSTS" ? "Op Costs" : cat.cost_type === "COGS" ? "COGS" : "",
         "Tier 1 Category": cat.tier_1_category || "",
         "Tier 2 Category": cat.tier_2_category || "",
         "Tier 3 Category": cat.tier_3_category || "",
@@ -143,6 +144,7 @@ export default function BudgetBuilderTab({ projectId }) {
       categoryLineItems.forEach((li) => {
         exportData.push({
           "Type": "LineItem",
+          "Cost Type": li.cost_type === "OP_COSTS" ? "Op Costs" : li.cost_type === "COGS" ? "COGS" : "",
           "Tier 1 Category": li.tier_1_category || "",
           "Tier 2 Category": li.tier_2_category || "",
           "Tier 3 Category": li.tier_3_category || "",
@@ -161,6 +163,7 @@ export default function BudgetBuilderTab({ projectId }) {
         lineItemSubItems.forEach((si) => {
           exportData.push({
             "Type": "SubItem",
+            "Cost Type": si.cost_type === "OP_COSTS" ? "Op Costs" : si.cost_type === "COGS" ? "COGS" : "",
             "Tier 1 Category": si.tier_1_category || "",
             "Tier 2 Category": si.tier_2_category || "",
             "Tier 3 Category": si.tier_3_category || "",
@@ -281,6 +284,7 @@ export default function BudgetBuilderTab({ projectId }) {
           tier_1_category: row["Tier 1 Category"],
           tier_2_category: row["Tier 2 Category"] || null,
           tier_3_category: row["Tier 3 Category"] || null,
+          cost_type: row["Cost Type"] || null,
           name: row["Name"],
           description: row["Description"] || null,
           budget_amount: parseFloat(row["Budget Amount"]) || 0,
@@ -476,6 +480,11 @@ export default function BudgetBuilderTab({ projectId }) {
                           </button>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              {category.cost_type && (
+                                <span className="text-xs font-bold text-white bg-slate-700 px-2 py-0.5 rounded">
+                                  {category.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
+                                </span>
+                              )}
                               <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">{category.tier_1_category}</span>
                               {category.tier_2_category && (
                                 <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{category.tier_2_category}</span>
@@ -567,6 +576,11 @@ export default function BudgetBuilderTab({ projectId }) {
                                       </button>
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                          {lineItem.cost_type && (
+                                            <span className="text-xs font-bold text-white bg-slate-600 px-2 py-0.5 rounded">
+                                              {lineItem.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
+                                            </span>
+                                          )}
                                           <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">{lineItem.tier_1_category}</span>
                                           {lineItem.tier_2_category && (
                                             <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{lineItem.tier_2_category}</span>
@@ -642,6 +656,11 @@ export default function BudgetBuilderTab({ projectId }) {
                                           <div className="flex items-center justify-between">
                                             <div className="flex-1">
                                               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                                {subItem.cost_type && (
+                                                  <span className="text-xs font-bold text-white bg-slate-500 px-1.5 py-0.5 rounded">
+                                                    {subItem.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
+                                                  </span>
+                                                )}
                                                 <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">{subItem.tier_1_category}</span>
                                                 {subItem.tier_2_category && (
                                                   <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{subItem.tier_2_category}</span>
