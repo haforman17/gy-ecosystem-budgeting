@@ -52,6 +52,7 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
     tier_1_category: lineItem?.tier_1_category || "",
     tier_2_category: lineItem?.tier_2_category || "",
     tier_3_category: lineItem?.tier_3_category || "",
+    cost_type: lineItem?.cost_type || "",
     name: lineItem?.name || "",
     description: lineItem?.description || "",
     budget_amount: lineItem?.budget_amount || 0,
@@ -101,6 +102,22 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
           <DialogTitle>{lineItem ? "Edit Line Item" : "New Line Item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="cost_type">Cost Type *</Label>
+            <Select
+              value={formData.cost_type}
+              onValueChange={(value) => setFormData({ ...formData, cost_type: value })}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select cost type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OP_COSTS">Operating Costs</SelectItem>
+                <SelectItem value="COGS">Cost of Goods Sold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="tier_1_category">Tier 1 Category *</Label>

@@ -21,6 +21,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     transaction_type: transaction?.transaction_type || "",
+    cost_type: transaction?.cost_type || "",
     amount: transaction?.amount || "",
     date: transaction?.date || "",
     description: transaction?.description || "",
@@ -129,6 +130,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   const validate = () => {
     const errs = {};
     if (!form.transaction_type) errs.transaction_type = "Required";
+    if (isExpense && !form.cost_type) errs.cost_type = "Required for expenses";
     if (!form.amount || Number(form.amount) <= 0) errs.amount = "Must be > 0";
     if (!form.date) errs.date = "Required";
     if (!form.description.trim()) errs.description = "Required";
@@ -172,6 +174,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     if (form.revenue_stream_id) data.revenue_stream_id = form.revenue_stream_id;
     if (form.funding_source_id) data.funding_source_id = form.funding_source_id;
     if (isExpense) {
+      if (form.cost_type) data.cost_type = form.cost_type;
       if (form.tier_1_category) data.tier_1_category = form.tier_1_category;
       if (form.tier_2_category) data.tier_2_category = form.tier_2_category;
       if (form.month) data.month = form.month;
@@ -234,6 +237,20 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
 
 {isExpense ? (
             <>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Cost Type *</Label>
+                <Select value={form.cost_type} onValueChange={(v) => updateField("cost_type", v)}>
+                  <SelectTrigger className={errors.cost_type ? "border-red-300" : ""}>
+                    <SelectValue placeholder="Select cost type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OP_COSTS">Operating Costs</SelectItem>
+                    <SelectItem value="COGS">Cost of Goods Sold</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.cost_type && <p className="text-xs text-red-500">{errors.cost_type}</p>}
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="text-sm">Date *</Label>
                 <Input
