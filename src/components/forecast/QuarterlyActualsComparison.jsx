@@ -21,6 +21,7 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         "Actual Expenses",
         "Expense Variance",
         "Actual Funding",
+        "Actual Tax",
         "Forecast Net CF",
         "Actual Net CF",
         "Net CF Variance",
@@ -34,6 +35,7 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         q.actualExpenses,
         q.varianceExpenses,
         q.actualFunding || 0,
+        q.actualTax || 0,
         q.forecastNetCashFlow,
         q.actualNetCashFlow,
         q.varianceNetCashFlow,
@@ -48,6 +50,7 @@ export default function QuarterlyActualsComparison({ data, totals }) {
         totals.actualExpenses,
         totals.varianceExpenses,
         totals.actualFunding || 0,
+        totals.actualTax || 0,
         totals.forecastNetCashFlow,
         totals.actualNetCashFlow,
         totals.varianceNetCashFlow,
@@ -96,6 +99,7 @@ export default function QuarterlyActualsComparison({ data, totals }) {
                 <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
                 <TableHead className="text-right font-semibold">Variance</TableHead>
                 <TableHead className="text-right font-semibold">Actual Funding</TableHead>
+                <TableHead className="text-right font-semibold">Actual Tax</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Net CF</TableHead>
                 <TableHead className="text-right font-semibold">Actual Net CF</TableHead>
                 <TableHead className="text-right font-semibold">Variance</TableHead>
@@ -121,6 +125,9 @@ export default function QuarterlyActualsComparison({ data, totals }) {
                   </TableCell>
                   <TableCell className="text-right text-blue-600 font-medium">
                     {formatCurrency(quarter.actualFunding || 0)}
+                  </TableCell>
+                  <TableCell className="text-right text-orange-600 font-medium">
+                    {formatCurrency(quarter.actualTax || 0)}
                   </TableCell>
                   <TableCell className="text-right text-slate-600">{formatCurrency(quarter.forecastNetCashFlow)}</TableCell>
                   <TableCell className={`text-right font-medium ${quarter.actualNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
@@ -157,6 +164,7 @@ export default function QuarterlyActualsComparison({ data, totals }) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right text-blue-600">{formatCurrency(totals.actualFunding || 0)}</TableCell>
+                <TableCell className="text-right text-orange-600">{formatCurrency(totals.actualTax || 0)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(totals.forecastNetCashFlow)}</TableCell>
                 <TableCell className={`text-right ${totals.actualNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatCurrency(totals.actualNetCashFlow)}

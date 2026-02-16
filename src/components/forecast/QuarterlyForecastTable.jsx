@@ -34,12 +34,13 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
       [],
       ["INSTRUCTIONS: Fill in the Forecast Revenue and Forecast Expenses columns only. Do not modify the Quarter column."],
       [],
-      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding"],
+      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax"],
       ...editableData.map((q) => [
         q.quarter,
         q.forecastRevenue || 0,
         q.forecastExpenses || 0,
         q.forecastFunding || 0,
+        q.forecastTax || 0,
       ]),
     ];
 
@@ -103,12 +104,13 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
     const wsData = [
       ["Quarterly Forecast", `Year: ${year}`],
       [],
-      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Net Cash Flow"],
+      ["Quarter", "Forecast Revenue", "Forecast Expenses", "Forecast Funding", "Forecast Tax", "Net Cash Flow"],
       ...editableData.map((q) => [
         q.quarter,
         q.forecastRevenue,
         q.forecastExpenses,
         q.forecastFunding || 0,
+        q.forecastTax || 0,
         q.forecastNetCashFlow,
       ]),
       [],
@@ -117,6 +119,7 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
         editableData.reduce((sum, q) => sum + q.forecastRevenue, 0),
         editableData.reduce((sum, q) => sum + q.forecastExpenses, 0),
         editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0),
+        editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0),
         editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0),
       ],
     ];
@@ -177,6 +180,7 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
                 <TableHead className="text-right font-semibold">Forecast Revenue</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Expenses</TableHead>
                 <TableHead className="text-right font-semibold">Forecast Funding</TableHead>
+                <TableHead className="text-right font-semibold">Forecast Tax</TableHead>
                 <TableHead className="text-right font-semibold">Net Cash Flow</TableHead>
               </TableRow>
             </TableHeader>
@@ -220,6 +224,18 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
                       <span className="text-blue-600">{formatCurrency(quarter.forecastFunding || 0)}</span>
                     )}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={quarter.forecastTax || 0}
+                        onChange={(e) => handleChange(idx, "forecastTax", e.target.value)}
+                        className="w-32 text-right"
+                      />
+                    ) : (
+                      <span className="text-orange-600">{formatCurrency(quarter.forecastTax || 0)}</span>
+                    )}
+                  </TableCell>
                   <TableCell className={`text-right font-medium ${quarter.forecastNetCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                     {formatCurrency(quarter.forecastNetCashFlow)}
                   </TableCell>
@@ -235,6 +251,9 @@ export default function QuarterlyForecastTable({ data, year, projectId }) {
                 </TableCell>
                 <TableCell className="text-right text-blue-600">
                   {formatCurrency(editableData.reduce((sum, q) => sum + (q.forecastFunding || 0), 0))}
+                </TableCell>
+                <TableCell className="text-right text-orange-600">
+                  {formatCurrency(editableData.reduce((sum, q) => sum + (q.forecastTax || 0), 0))}
                 </TableCell>
                 <TableCell className={`text-right ${editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatCurrency(editableData.reduce((sum, q) => sum + q.forecastNetCashFlow, 0))}

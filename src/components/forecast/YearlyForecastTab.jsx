@@ -251,11 +251,16 @@ export default function YearlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "FUNDING_DRAWDOWN")
         .reduce((sum, t) => sum + t.amount, 0);
 
+      const tax = yearTransactions
+        .filter((t) => t.transaction_type === "TAX_PAYMENT")
+        .reduce((sum, t) => sum + t.amount, 0);
+
       yearsArray.push({
         calendarYear: calendarYear,
         actualRevenue: revenue,
         actualExpenses: expenses,
         actualFunding: funding,
+        actualTax: tax,
         actualNetCashFlow: revenue - expenses + funding,
       });
     }
@@ -495,6 +500,7 @@ export default function YearlyForecastTab({ projectId, project }) {
                       <TableHead className="text-right font-semibold">Actual Expenses</TableHead>
                       <TableHead className="text-right font-semibold">Variance</TableHead>
                       <TableHead className="text-right font-semibold">Actual Funding</TableHead>
+                      <TableHead className="text-right font-semibold">Actual Tax</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -517,6 +523,9 @@ export default function YearlyForecastTab({ projectId, project }) {
                         </TableCell>
                         <TableCell className="text-right text-blue-600 font-medium">
                           {formatCurrency(item.actualFunding || 0)}
+                        </TableCell>
+                        <TableCell className="text-right text-orange-600 font-medium">
+                          {formatCurrency(item.actualTax || 0)}
                         </TableCell>
                       </TableRow>
                     ))}

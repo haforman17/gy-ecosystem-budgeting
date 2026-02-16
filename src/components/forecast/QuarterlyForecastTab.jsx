@@ -72,6 +72,10 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         .filter((t) => t.transaction_type === "FUNDING_DRAWDOWN")
         .reduce((sum, t) => sum + t.amount, 0);
 
+      const tax = quarterTransactions
+        .filter((t) => t.transaction_type === "TAX_PAYMENT")
+        .reduce((sum, t) => sum + t.amount, 0);
+
       const year = quarterDate.getFullYear();
       const quarterNum = Math.floor((quarterDate.getMonth()) / 3) + 1;
 
@@ -81,6 +85,7 @@ export default function QuarterlyForecastTab({ projectId, project }) {
         actualRevenue: revenue,
         actualExpenses: expenses,
         actualFunding: funding,
+        actualTax: tax,
         actualNetCashFlow: revenue - expenses + funding,
       };
     });
@@ -129,6 +134,7 @@ export default function QuarterlyForecastTab({ projectId, project }) {
     const actualRevenue = combinedData.reduce((sum, q) => sum + q.actualRevenue, 0);
     const actualExpenses = combinedData.reduce((sum, q) => sum + q.actualExpenses, 0);
     const actualFunding = combinedData.reduce((sum, q) => sum + (q.actualFunding || 0), 0);
+    const actualTax = combinedData.reduce((sum, q) => sum + (q.actualTax || 0), 0);
     const forecastRevenue = combinedData.reduce((sum, q) => sum + q.forecastRevenue, 0);
     const forecastExpenses = combinedData.reduce((sum, q) => sum + q.forecastExpenses, 0);
 
@@ -136,6 +142,7 @@ export default function QuarterlyForecastTab({ projectId, project }) {
       actualRevenue,
       actualExpenses,
       actualFunding,
+      actualTax,
       actualNetCashFlow: actualRevenue - actualExpenses,
       forecastRevenue,
       forecastExpenses,
