@@ -4,6 +4,8 @@ import { createPageUrl } from "../utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "lucide-react";
 import ProjectHeader from "../components/project/ProjectHeader";
 import OverviewTab from "../components/project/OverviewTab";
 import BudgetBuilderTab from "../components/project/BudgetBuilderTab";
@@ -18,6 +20,12 @@ export default function ProjectDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
   const [activeTab, setActiveTab] = useState("overview");
+  const [workingYear, setWorkingYear] = useState(new Date().getFullYear().toString());
+  const [isYearChanging, setIsYearChanging] = useState(false);
+
+  // Generate year options (current year ± 5 years)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
   const { data: project, isLoading: loadingProject } = useQuery({
     queryKey: ["project", projectId],
@@ -29,8 +37,8 @@ export default function ProjectDetail() {
   });
 
   const { data: lineItems = [], isLoading: loadingLI } = useQuery({
-    queryKey: ["lineItems", projectId],
-    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
+    queryKey: ["lineItems", projectId, workingYear],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId, year: workingYear }),
     enabled: !!projectId,
   });
 
@@ -47,10 +55,16 @@ export default function ProjectDetail() {
   });
 
   const { data: transactions = [], isLoading: loadingTx } = useQuery({
-    queryKey: ["transactions", projectId],
-    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
+    queryKey: ["transactions", projectId, workingYear],
+    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId, year: workingYear }),
     enabled: !!projectId,
   });
+
+  const handleYearChange = (newYear) => {
+    setIsYearChanging(true);
+    setWorkingYear(newYear);
+    setTimeout(() => setIsYearChanging(false), 500);
+  };
 
   const isLoading = loadingProject || loadingLI || loadingRS || loadingFS || loadingTx;
 
@@ -72,6 +86,36 @@ export default function ProjectDetail() {
         onForecast={() => navigate(createPageUrl(`ProjectForecasting?id=${projectId}`))}
       />
 
+      {/* Year Selector */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Working Year</label>
+              <p className="text-xs text-slate-500 mt-0.5">Select year to view and edit data</p>
+            </div>
+          </div>
+          <Select value={workingYear} onValueChange={handleYearChange}>
+            <SelectTrigger className="w-32 bg-emerald-50 border-emerald-200 font-semibold text-emerald-700">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {isYearChanging && (
+          <div className="mt-3 text-xs text-emerald-600 font-medium animate-pulse">
+            Loading {workingYear} data...
+          </div>
+        )}
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100/60">
           <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
@@ -92,19 +136,19 @@ export default function ProjectDetail() {
         </TabsContent>
 
         <TabsContent value="budgetBuilder" className="mt-6">
-          <BudgetBuilderTab projectId={projectId} />
+          <BudgetBuilderTab projectId={projectId} workingYear={workingYear} />
         </TabsContent>
 
         <TabsContent value="budget" className="mt-6">
-          <BudgetTab projectId={projectId} lineItems={lineItems} />
+          <BudgetTab projectId={projectId} lineItems={lineItems} workingYear={workingYear} />
         </TabsContent>
 
         <TabsContent value="revenue" className="mt-6">
-          <RevenueTab projectId={projectId} revenueStreams={revenueStreams} />
+          <RevenueTab projectId={projectId} revenueStreams={revenueStreams} workingYear={workingYear} />
         </TabsContent>
 
         <TabsContent value="funding" className="mt-6">
-          <FundingTab projectId={projectId} fundingSources={fundingSources} />
+          <FundingTab projectId={projectId} fundingSources={fundingSources} workingYear={workingYear} />
         </TabsContent>
 
         <TabsContent value="transactions" className="mt-6">
@@ -114,6 +158,7 @@ export default function ProjectDetail() {
             lineItems={lineItems}
             revenueStreams={revenueStreams}
             fundingSources={fundingSources}
+            workingYear={workingYear}
           />
         </TabsContent>
       </Tabs>
