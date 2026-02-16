@@ -240,7 +240,9 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
                       <>
                         <TableCell className="text-xs">
                           {tx.cost_type ? (
-                            <span className="font-semibold text-white bg-slate-600 px-2 py-0.5 rounded">
+                            <span className={`px-2 py-0.5 rounded font-semibold text-white ${
+                              tx.cost_type === "OP_COSTS" ? "bg-slate-600" : "bg-slate-700"
+                            }`}>
                               {tx.cost_type === "OP_COSTS" ? "Op Costs" : "COGS"}
                             </span>
                           ) : "—"}
