@@ -29,6 +29,11 @@ export default function ProjectDetail() {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: project, isLoading: loadingProject } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
