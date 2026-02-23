@@ -32,7 +32,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
   // Calculate real values from transactions for each revenue stream
   const revenueCalcs = useMemo(() => {
     const calcs = {};
-    revenueStreams.forEach((rs) => {
+    filteredRevenueStreams.forEach((rs) => {
       const relatedTxs = transactions.filter(
         (tx) => tx.transaction_type === "REVENUE" && tx.revenue_stream_id === rs.id
       );
