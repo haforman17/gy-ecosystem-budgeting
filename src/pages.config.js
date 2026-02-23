@@ -52,6 +52,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminMessages from './pages/AdminMessages';
 import AdminOrganizationDetail from './pages/AdminOrganizationDetail';
 import AdminOrganizations from './pages/AdminOrganizations';
+import AdminProjectData from './pages/AdminProjectData';
 import AdminSettings from './pages/AdminSettings';
 import AdminUserDetail from './pages/AdminUserDetail';
 import AdminUsers from './pages/AdminUsers';
@@ -72,7 +73,7 @@ import Projects from './pages/Projects';
 import ReportBuilder from './pages/ReportBuilder';
 import ReportGenerate from './pages/ReportGenerate';
 import Reports from './pages/Reports';
-import AdminProjectData from './pages/AdminProjectData';
+import Settings from './pages/Settings';
 import __Layout from './Layout.jsx';
 
 
@@ -82,6 +83,7 @@ export const PAGES = {
     "AdminMessages": AdminMessages,
     "AdminOrganizationDetail": AdminOrganizationDetail,
     "AdminOrganizations": AdminOrganizations,
+    "AdminProjectData": AdminProjectData,
     "AdminSettings": AdminSettings,
     "AdminUserDetail": AdminUserDetail,
     "AdminUsers": AdminUsers,
@@ -102,7 +104,7 @@ export const PAGES = {
     "ReportBuilder": ReportBuilder,
     "ReportGenerate": ReportGenerate,
     "Reports": Reports,
-    "AdminProjectData": AdminProjectData,
+    "Settings": Settings,
 }
 
 export const pagesConfig = {
