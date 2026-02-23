@@ -74,7 +74,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
 
   // Chart data by credit type - Estimated Revenue
   const typeData = {};
-  revenueStreams.forEach((rs) => {
+  filteredRevenueStreams.forEach((rs) => {
     const t = rs.credit_type || "OTHER";
     typeData[t] = (typeData[t] || 0) + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0));
   });
@@ -85,7 +85,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
 
   // Chart data - Estimated vs Real Revenue by type
   const comparisonData = {};
-  revenueStreams.forEach((rs) => {
+  filteredRevenueStreams.forEach((rs) => {
     const t = rs.credit_type || "OTHER";
     if (!comparisonData[t]) {
       comparisonData[t] = { estimated: 0, real: 0 };
@@ -100,7 +100,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
   }));
 
   // Total revenue comparison
-  const totalEstimated = revenueStreams.reduce(
+  const totalEstimated = filteredRevenueStreams.reduce(
     (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0)),
     0
   );
