@@ -17,7 +17,7 @@ const txTypes = [
   { value: "DEBT_REPAYMENT", label: "Debt Repayment" },
 ];
 
-export default function TransactionFormModal({ projectId, transaction, lineItems, revenueStreams, fundingSources, onClose }) {
+export default function TransactionFormModal({ projectId, transaction, lineItems, revenueStreams, fundingSources, workingYear, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     transaction_type: transaction?.transaction_type || "",
@@ -32,7 +32,7 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
     tier_1_category: transaction?.tier_1_category || "",
     tier_2_category: transaction?.tier_2_category || "",
     month: transaction?.month || "",
-    year: transaction?.year || "",
+    year: transaction?.year || workingYear || "",
     units_quantity: transaction?.units_quantity || "",
     unit_price: transaction?.unit_price || "",
     receipt_url: transaction?.receipt_url || "",
