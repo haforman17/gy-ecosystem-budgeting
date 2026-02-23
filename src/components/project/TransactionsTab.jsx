@@ -14,7 +14,7 @@ import TransactionFormModal from "./TransactionFormModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function TransactionsTab({ projectId, transactions, lineItems, revenueStreams, fundingSources }) {
+export default function TransactionsTab({ projectId, transactions, lineItems, revenueStreams, fundingSources, workingYear }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [activeTab, setActiveTab] = useState("REVENUE");
