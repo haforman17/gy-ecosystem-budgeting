@@ -13,7 +13,7 @@ import BudgetLineItemForm from "./BudgetLineItemForm";
 import BudgetSubItemForm from "./BudgetSubItemForm";
 import { toast } from "sonner";
 
-export default function BudgetBuilderTab({ projectId }) {
+export default function BudgetBuilderTab({ projectId, workingYear }) {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [expandedLineItems, setExpandedLineItems] = useState({});
   const [showCategoryForm, setShowCategoryForm] = useState(false);
