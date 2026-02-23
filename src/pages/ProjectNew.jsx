@@ -30,6 +30,12 @@ const statuses = [
 
 export default function ProjectNew() {
   const navigate = useNavigate();
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
   const [form, setForm] = useState({
     name: "",
     description: "",
