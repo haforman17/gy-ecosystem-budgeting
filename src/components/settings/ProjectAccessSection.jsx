@@ -43,7 +43,6 @@ function ProjectCollaborators({ project, currentUser, allUsers }) {
 
   return (
     <div className="space-y-3">
-      {/* Owner */}
       <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg text-sm">
         <div className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
           {currentUser?.full_name?.charAt(0) || "O"}
@@ -54,7 +53,6 @@ function ProjectCollaborators({ project, currentUser, allUsers }) {
         </div>
       </div>
 
-      {/* Collaborators */}
       {collaboratorUsers.map((u) => (
         <div key={u.id} className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
           <div className="flex items-center gap-2">
@@ -78,7 +76,6 @@ function ProjectCollaborators({ project, currentUser, allUsers }) {
         </div>
       ))}
 
-      {/* Add */}
       <div className="flex gap-2 pt-1">
         <Input
           placeholder="Collaborator email address"
