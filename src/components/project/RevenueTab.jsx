@@ -115,7 +115,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
         </Button>
       </div>
 
-      {revenueStreams.length === 0 ? (
+      {filteredRevenueStreams.length === 0 ? (
         <EmptyState
           icon={Droplets}
           title="No revenue streams"
