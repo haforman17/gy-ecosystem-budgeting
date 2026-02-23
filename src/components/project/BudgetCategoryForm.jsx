@@ -78,7 +78,7 @@ export default function BudgetCategoryForm({ projectId, category, workingYear, o
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId, formData.year] });
       toast.success(category ? "Category updated" : "Category created");
       onClose();
     },
