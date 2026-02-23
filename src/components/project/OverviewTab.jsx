@@ -6,14 +6,18 @@ import { Wallet, TrendingDown, TrendingUp, PiggyBank, FileText, Droplets, Landma
 import { format } from "date-fns";
 import { getLabel } from "../shared/StatusBadge";
 
-export default function OverviewTab({ lineItems, revenueStreams, fundingSources, transactions }) {
+export default function OverviewTab({ lineItems, revenueStreams, fundingSources, transactions, workingYear }) {
   const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
   const totalActualSpend = transactions
     .filter((t) => t.transaction_type === "EXPENSE")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const variance = totalBudget - totalActualSpend;
-  const revenueForecast = revenueStreams.reduce(
-    (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.price_per_unit || 0)),
+  // Filter revenue streams by working year (vintage)
+  const yearRevenueStreams = workingYear
+    ? revenueStreams.filter(rs => !rs.vintage || rs.vintage === workingYear.toString())
+    : revenueStreams;
+  const revenueForecast = yearRevenueStreams.reduce(
+    (sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || rs.price_per_unit || 0)),
     0
   );
 
