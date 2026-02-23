@@ -77,7 +77,7 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
       await base44.entities.SubItem.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subItems", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["subItems", projectId, workingYear] });
       toast.success("Sub-item deleted");
     },
   });
