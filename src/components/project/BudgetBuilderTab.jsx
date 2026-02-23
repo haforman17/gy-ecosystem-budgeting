@@ -207,6 +207,7 @@ export default function BudgetBuilderTab({ projectId }) {
     const template = [
       {
         "Type": "Category",
+        "Cost Type": "Op Costs",
         "Tier 1 Category": "Habitat Conversion Costs",
         "Tier 2 Category": "Broadleaf Woodland creation",
         "Tier 3 Category": "",
@@ -220,6 +221,7 @@ export default function BudgetBuilderTab({ projectId }) {
       },
       {
         "Type": "LineItem",
+        "Cost Type": "Op Costs",
         "Tier 1 Category": "Habitat Conversion Costs",
         "Tier 2 Category": "Broadleaf Woodland creation",
         "Tier 3 Category": "",
@@ -233,6 +235,7 @@ export default function BudgetBuilderTab({ projectId }) {
       },
       {
         "Type": "SubItem",
+        "Cost Type": "Op Costs",
         "Tier 1 Category": "Habitat Conversion Costs",
         "Tier 2 Category": "Broadleaf Woodland creation",
         "Tier 3 Category": "",
