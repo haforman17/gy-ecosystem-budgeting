@@ -10,12 +10,20 @@ import ProjectsTable from "../components/dashboard/ProjectsTable";
 import EmptyState from "../components/shared/EmptyState";
 import LoadingState from "../components/shared/LoadingState";
 import { FolderTree } from "lucide-react";
+import { filterAccessibleProjects } from "../components/shared/useProjectAccess";
 
 export default function Dashboard() {
-  const { data: projects = [], isLoading: loadingProjects } = useQuery({
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const { data: allProjects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-created_date"),
   });
+
+  const projects = filterAccessibleProjects(allProjects, currentUser);
 
   const { data: lineItems = [], isLoading: loadingLineItems } = useQuery({
     queryKey: ["lineItems"],
