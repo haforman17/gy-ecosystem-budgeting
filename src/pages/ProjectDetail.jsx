@@ -111,7 +111,7 @@ export default function ProjectDetail() {
     <div className="space-y-6">
       <ProjectHeader
         project={project}
-        onEdit={() => navigate(createPageUrl(`ProjectEdit?id=${projectId}`))}
+        onEdit={access.canEdit ? () => navigate(createPageUrl(`ProjectEdit?id=${projectId}`)) : undefined}
         onFinancials={() => navigate(createPageUrl(`ProjectFinancials?id=${projectId}`))}
         onForecast={() => navigate(createPageUrl(`ProjectForecasting?id=${projectId}`))}
       />
