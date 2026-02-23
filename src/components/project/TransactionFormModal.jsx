@@ -163,11 +163,16 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Derive year from date if not explicitly set
+    const yearFromDate = form.date ? new Date(form.date).getFullYear().toString() : workingYear;
+
     const data = {
       transaction_type: form.transaction_type,
       amount: Number(form.amount),
       date: form.date,
       description: form.description,
+      year: form.year || yearFromDate || workingYear,
       reference: form.reference || undefined,
       receipt_url: form.receipt_url || undefined,
     };
@@ -178,7 +183,6 @@ export default function TransactionFormModal({ projectId, transaction, lineItems
       if (form.tier_1_category) data.tier_1_category = form.tier_1_category;
       if (form.tier_2_category) data.tier_2_category = form.tier_2_category;
       if (form.month) data.month = form.month;
-      if (form.year) data.year = form.year;
     }
     if (isRevenue) {
       if (form.units_quantity) data.units_quantity = Number(form.units_quantity);
