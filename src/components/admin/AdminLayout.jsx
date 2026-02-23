@@ -30,6 +30,7 @@ const adminNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, page: "AdminDashboard" },
   { label: "Organizations", icon: Building2, page: "AdminOrganizations" },
   { label: "Users", icon: Users, page: "AdminUsers" },
+  { label: "Project Data", icon: Database, page: "AdminProjectData" },
   { label: "Activity", icon: Activity, page: "AdminActivity" },
   { label: "Messages", icon: Mail, page: "AdminMessages" },
   { label: "Settings", icon: Settings, page: "AdminSettings" },
