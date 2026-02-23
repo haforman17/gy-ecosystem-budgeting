@@ -74,6 +74,9 @@ export default function Settings() {
           <TabsTrigger value="config" className="flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5" /> Project Config
           </TabsTrigger>
+          <TabsTrigger value="access" className="flex items-center gap-1.5">
+            <FolderKey className="h-3.5 w-3.5" /> Project Access
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="space-y-5">
