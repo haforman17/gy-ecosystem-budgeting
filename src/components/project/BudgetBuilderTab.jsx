@@ -734,6 +734,7 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
         <BudgetCategoryForm
           projectId={projectId}
           category={editingCategory}
+          workingYear={workingYear}
           onClose={() => {
             setShowCategoryForm(false);
             setEditingCategory(null);
@@ -746,6 +747,7 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
           projectId={projectId}
           categoryId={selectedCategoryId}
           lineItem={editingLineItem}
+          workingYear={workingYear}
           onClose={() => {
             setShowLineItemForm(false);
             setEditingLineItem(null);
@@ -758,6 +760,7 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
         <BudgetSubItemForm
           lineItemId={selectedLineItemId}
           subItem={editingSubItem}
+          workingYear={workingYear}
           onClose={() => {
             setShowSubItemForm(false);
             setEditingSubItem(null);
