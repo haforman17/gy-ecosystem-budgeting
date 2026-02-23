@@ -82,6 +82,7 @@ export default function BudgetSubItemForm({ lineItemId, subItem, workingYear, on
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subItems"] });
+      queryClient.invalidateQueries({ queryKey: ["subItemsOverview"] });
       toast.success(subItem ? "Sub-item updated" : "Sub-item created");
       onClose();
     },
