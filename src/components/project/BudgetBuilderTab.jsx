@@ -57,7 +57,7 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
       await base44.entities.BudgetCategory.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId, workingYear] });
       toast.success("Category deleted");
     },
   });
