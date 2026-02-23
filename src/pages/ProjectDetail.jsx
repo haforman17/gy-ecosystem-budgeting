@@ -135,6 +135,7 @@ export default function ProjectDetail() {
 
         <TabsContent value="overview" className="mt-6">
           <OverviewTab
+            projectId={projectId}
             lineItems={lineItems}
             revenueStreams={revenueStreams}
             fundingSources={fundingSources}
