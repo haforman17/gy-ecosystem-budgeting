@@ -80,13 +80,29 @@ export default function ProjectDetail() {
     setTimeout(() => setIsYearChanging(false), 500);
   };
 
+  const access = useProjectAccess(project, currentUser);
+
   const isLoading = loadingProject || loadingLI || loadingRS || loadingFS || loadingTx;
 
   if (isLoading) return <LoadingState message="Loading project..." />;
+
   if (!project) {
     return (
       <div className="text-center py-20">
         <p className="text-slate-500">Project not found</p>
+      </div>
+    );
+  }
+
+  // Enforce access control — 403 equivalent in frontend
+  if (currentUser && !access.canAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <div className="h-14 w-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+          <span className="text-2xl">🔒</span>
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Access Denied (403)</h2>
+        <p className="text-slate-500 text-sm max-w-xs">You do not have permission to view this project. Contact the project owner to request access.</p>
       </div>
     );
   }
