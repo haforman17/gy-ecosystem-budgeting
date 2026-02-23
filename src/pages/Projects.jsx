@@ -32,10 +32,17 @@ export default function Projects() {
   const [deleteProject, setDeleteProject] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: projects = [], isLoading } = useQuery({
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const { data: allProjects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-created_date"),
   });
+
+  const projects = filterAccessibleProjects(allProjects, currentUser);
 
   const { data: lineItems = [] } = useQuery({
     queryKey: ["lineItems"],
