@@ -43,8 +43,8 @@ export default function ProjectDetail() {
   });
 
   const { data: revenueStreams = [], isLoading: loadingRS } = useQuery({
-    queryKey: ["revenueStreams", projectId],
-    queryFn: () => base44.entities.RevenueStream.filter({ project_id: projectId }),
+    queryKey: ["revenueStreams", projectId, workingYear],
+    queryFn: () => base44.entities.RevenueStream.filter({ project_id: projectId, vintage: workingYear }),
     enabled: !!projectId,
   });
 
