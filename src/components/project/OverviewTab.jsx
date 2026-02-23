@@ -5,9 +5,37 @@ import { Badge } from "@/components/ui/badge";
 import { Wallet, TrendingDown, TrendingUp, PiggyBank, FileText, Droplets, Landmark } from "lucide-react";
 import { format } from "date-fns";
 import { getLabel } from "../shared/StatusBadge";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
-export default function OverviewTab({ lineItems, revenueStreams, fundingSources, transactions, workingYear }) {
-  const totalBudget = lineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0);
+export default function OverviewTab({ lineItems, revenueStreams, fundingSources, transactions, workingYear, projectId }) {
+  // Fetch full budget builder data for accurate total budget calculation
+  const { data: budgetCategories = [] } = useQuery({
+    queryKey: ["budgetCategories", projectId, workingYear],
+    queryFn: () => base44.entities.BudgetCategory.filter({ project_id: projectId, year: workingYear }),
+    enabled: !!projectId,
+  });
+
+  const { data: allLineItems = [] } = useQuery({
+    queryKey: ["allLineItems", projectId, workingYear],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId, year: workingYear }),
+    enabled: !!projectId,
+  });
+
+  const { data: allSubItems = [] } = useQuery({
+    queryKey: ["subItemsOverview", projectId, workingYear],
+    queryFn: async () => {
+      const items = await base44.entities.SubItem.list();
+      const lineItemIds = new Set(allLineItems.map(li => li.id));
+      return items.filter(si => lineItemIds.has(si.line_item_id) && (!si.year || si.year === workingYear));
+    },
+    enabled: allLineItems.length > 0,
+  });
+
+  const totalBudget =
+    budgetCategories.reduce((sum, c) => sum + (c.budget_amount || 0), 0) +
+    allLineItems.reduce((sum, li) => sum + (li.budget_amount || 0), 0) +
+    allSubItems.reduce((sum, si) => sum + (si.budget_amount || 0), 0);
   const totalActualSpend = transactions
     .filter((t) => t.transaction_type === "EXPENSE")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
