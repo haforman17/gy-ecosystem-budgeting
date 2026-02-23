@@ -132,6 +132,7 @@ export default function ProjectDetail() {
             revenueStreams={revenueStreams}
             fundingSources={fundingSources}
             transactions={transactions}
+            workingYear={workingYear}
           />
         </TabsContent>
 
@@ -144,7 +145,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         <TabsContent value="revenue" className="mt-6">
-          <RevenueTab projectId={projectId} revenueStreams={revenueStreams} workingYear={workingYear} />
+          <RevenueTab projectId={projectId} revenueStreams={revenueStreams} transactions={transactions} workingYear={workingYear} />
         </TabsContent>
 
         <TabsContent value="funding" className="mt-6">
