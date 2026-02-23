@@ -297,6 +297,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
           )}
         />
       )}
+
     </div>
   );
 }
