@@ -30,24 +30,24 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
   const queryClient = useQueryClient();
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["budgetCategories", projectId],
-    queryFn: () => base44.entities.BudgetCategory.filter({ project_id: projectId }, "sort_order"),
-    enabled: !!projectId,
+    queryKey: ["budgetCategories", projectId, workingYear],
+    queryFn: () => base44.entities.BudgetCategory.filter({ project_id: projectId, year: workingYear }, "sort_order"),
+    enabled: !!projectId && !!workingYear,
   });
 
   const { data: lineItems = [] } = useQuery({
-    queryKey: ["lineItems", projectId],
-    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId }),
-    enabled: !!projectId,
+    queryKey: ["lineItems", projectId, workingYear],
+    queryFn: () => base44.entities.LineItem.filter({ project_id: projectId, year: workingYear }),
+    enabled: !!projectId && !!workingYear,
   });
 
   const { data: subItems = [] } = useQuery({
-    queryKey: ["subItems", projectId],
+    queryKey: ["subItems", projectId, workingYear],
     queryFn: async () => {
       const allLineItemIds = lineItems.map(li => li.id);
       if (allLineItemIds.length === 0) return [];
       const items = await base44.entities.SubItem.list();
-      return items.filter(si => allLineItemIds.includes(si.line_item_id));
+      return items.filter(si => allLineItemIds.includes(si.line_item_id) && (!si.year || si.year === workingYear));
     },
     enabled: lineItems.length > 0,
   });
