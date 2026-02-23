@@ -56,7 +56,14 @@ export default function ProjectDetail() {
 
   const { data: transactions = [], isLoading: loadingTx } = useQuery({
     queryKey: ["transactions", projectId, workingYear],
-    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId, year: workingYear }),
+    queryFn: async () => {
+      const all = await base44.entities.Transaction.filter({ project_id: projectId });
+      // Filter by working year: use the `year` field if set, otherwise derive from `date`
+      return all.filter((t) => {
+        const txYear = t.year || (t.date ? new Date(t.date).getFullYear().toString() : null);
+        return txYear === workingYear;
+      });
+    },
     enabled: !!projectId,
   });
 
