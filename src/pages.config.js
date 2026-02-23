@@ -72,6 +72,7 @@ import Projects from './pages/Projects';
 import ReportBuilder from './pages/ReportBuilder';
 import ReportGenerate from './pages/ReportGenerate';
 import Reports from './pages/Reports';
+import AdminProjectData from './pages/AdminProjectData';
 import __Layout from './Layout.jsx';
 
 
@@ -101,6 +102,7 @@ export const PAGES = {
     "ReportBuilder": ReportBuilder,
     "ReportGenerate": ReportGenerate,
     "Reports": Reports,
+    "AdminProjectData": AdminProjectData,
 }
 
 export const pagesConfig = {
