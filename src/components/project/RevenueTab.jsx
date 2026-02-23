@@ -169,7 +169,7 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {revenueStreams.map((rs) => (
+                    {filteredRevenueStreams.map((rs) => (
                       <TableRow key={rs.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setSelectedRevenue(rs)}>
                         <TableCell><StatusBadge value={rs.credit_type} /></TableCell>
                         <TableCell className="text-sm text-slate-700">{rs.description}</TableCell>
