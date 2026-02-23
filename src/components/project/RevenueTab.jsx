@@ -23,6 +23,12 @@ export default function RevenueTab({ projectId, revenueStreams, transactions = [
   const [selectedRevenue, setSelectedRevenue] = useState(null);
   const queryClient = useQueryClient();
 
+  // Filter revenue streams by working year (vintage matches working year)
+  const filteredRevenueStreams = useMemo(() => {
+    if (!workingYear) return revenueStreams;
+    return revenueStreams.filter(rs => !rs.vintage || rs.vintage === workingYear.toString());
+  }, [revenueStreams, workingYear]);
+
   // Calculate real values from transactions for each revenue stream
   const revenueCalcs = useMemo(() => {
     const calcs = {};
