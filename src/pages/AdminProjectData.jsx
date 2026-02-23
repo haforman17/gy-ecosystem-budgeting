@@ -1,21 +1,95 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { formatCurrency } from "@/components/shared/CurrencyFormat";
-import { Download, Search, ChevronDown, ChevronRight, FolderTree } from "lucide-react";
+import { Download, User, FolderTree, Calendar, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
 import moment from "moment";
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+function downloadCSV(rows, filename) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => `"${(r[h] ?? "").toString().replace(/"/g, '""')}"`).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+}
+
+function downloadXLSX(rows, filename) {
+  if (!rows.length) return;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Data");
+  XLSX.writeFile(wb, filename);
+}
+
+function DataTable({ columns, rows, title, csvFilename, xlsxFilename }) {
+  return (
+    <Card className="mb-6">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base font-semibold text-slate-800">{title}</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => downloadCSV(rows, csvFilename)} disabled={!rows.length}>
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Download CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => downloadXLSX(rows, xlsxFilename)} disabled={!rows.length}>
+              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+              Download Excel
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          {rows.length === 0 ? (
+            <div className="text-center py-8 text-sm text-slate-400">No data for selected filters</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-y border-slate-200">
+                <tr>
+                  {columns.map((col) => (
+                    <th key={col.key} className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    {columns.map((col) => (
+                      <td key={col.key} className="px-4 py-2.5 text-slate-700 whitespace-nowrap">
+                        {row[col.key] ?? "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── main page ────────────────────────────────────────────────────────────────
 export default function AdminProjectData() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [expandedProject, setExpandedProject] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState("all");
+  const [selectedProjectId, setSelectedProjectId] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
+
+  // fetch everything
+  const { data: users = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => base44.entities.User.list(),
+  });
 
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ["admin-all-projects"],
@@ -25,6 +99,16 @@ export default function AdminProjectData() {
   const { data: lineItems = [] } = useQuery({
     queryKey: ["admin-all-lineItems"],
     queryFn: () => base44.entities.LineItem.list(),
+  });
+
+  const { data: subItems = [] } = useQuery({
+    queryKey: ["admin-all-subItems"],
+    queryFn: () => base44.entities.SubItem.list(),
+  });
+
+  const { data: budgetCategories = [] } = useQuery({
+    queryKey: ["admin-all-budgetCategories"],
+    queryFn: () => base44.entities.BudgetCategory.list(),
   });
 
   const { data: revenueStreams = [] } = useQuery({
@@ -42,288 +126,301 @@ export default function AdminProjectData() {
     queryFn: () => base44.entities.Transaction.list(),
   });
 
-  const { data: budgetCategories = [] } = useQuery({
-    queryKey: ["admin-all-budgetCategories"],
-    queryFn: () => base44.entities.BudgetCategory.list(),
-  });
+  // ── derived ──────────────────────────────────────────────────────────────
+  // projects belonging to selected user
+  const userProjects = useMemo(() => {
+    if (selectedUserId === "all") return projects;
+    return projects.filter((p) => p.created_by === users.find((u) => u.id === selectedUserId)?.email || p.owner_id === selectedUserId);
+  }, [selectedUserId, projects, users]);
 
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      !search ||
-      p.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.location?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  const getProjectStats = (projectId) => ({
-    lineItems: lineItems.filter((li) => li.project_id === projectId).length,
-    revenueStreams: revenueStreams.filter((rs) => rs.project_id === projectId).length,
-    fundingSources: fundingSources.filter((fs) => fs.project_id === projectId).length,
-    transactions: transactions.filter((t) => t.project_id === projectId).length,
-    totalBudget: lineItems
-      .filter((li) => li.project_id === projectId)
-      .reduce((sum, li) => sum + (li.budget_amount || 0), 0),
-    totalRevenue: revenueStreams
-      .filter((rs) => rs.project_id === projectId)
-      .reduce((sum, rs) => sum + ((rs.estimated_volume || 0) * (rs.estimated_price_per_unit || 0)), 0),
-    totalFunding: fundingSources
-      .filter((fs) => fs.project_id === projectId)
-      .reduce((sum, fs) => sum + (fs.total_amount || 0), 0),
-    totalExpenses: transactions
-      .filter((t) => t.project_id === projectId && t.transaction_type === "EXPENSE")
-      .reduce((sum, t) => sum + (t.amount || 0), 0),
-  });
+  // available years from budget items + revenue streams for selected project
+  const availableYears = useMemo(() => {
+    if (!selectedProjectId || selectedProjectId === "all") return [];
+    const years = new Set();
+    [...lineItems, ...budgetCategories, ...subItems]
+      .filter((i) => i.project_id === selectedProjectId && i.year)
+      .forEach((i) => years.add(i.year));
+    revenueStreams.filter((r) => r.project_id === selectedProjectId && r.vintage).forEach((r) => years.add(r.vintage));
+    transactions.filter((t) => t.project_id === selectedProjectId && t.year).forEach((t) => years.add(t.year));
+    return [...years].sort();
+  }, [selectedProjectId, lineItems, budgetCategories, subItems, revenueStreams, transactions]);
 
-  const downloadProjectData = (project) => {
-    const wb = XLSX.utils.book_new();
+  // reset downstream when upstream changes
+  const handleUserChange = (val) => { setSelectedUserId(val); setSelectedProjectId("all"); setSelectedYear("all"); };
+  const handleProjectChange = (val) => { setSelectedProjectId(val); setSelectedYear("all"); };
 
-    // Project info sheet
-    const projectSheet = XLSX.utils.json_to_sheet([{
-      Name: project.name,
-      Type: project.project_type,
-      Location: project.location,
-      "Site Area (ha)": project.site_area,
-      Status: project.status,
-      "Start Date": project.start_date,
-      "End Date": project.end_date || "",
-      Description: project.description || "",
-    }]);
-    XLSX.utils.book_append_sheet(wb, projectSheet, "Project Info");
+  // ── TABLE DATA ────────────────────────────────────────────────────────────
+  // Build all budget builder items (categories + line items + sub-items) for selected project+year
+  const budgetRows = useMemo(() => {
+    if (selectedProjectId === "all") return [];
+    const yearMatch = (item) => selectedYear === "all" || item.year === selectedYear;
 
-    // Budget categories
-    const cats = budgetCategories.filter((c) => c.project_id === project.id);
-    if (cats.length > 0) {
-      const catSheet = XLSX.utils.json_to_sheet(cats.map((c) => ({
-        Name: c.name, Tier1: c.tier_1_category, Tier2: c.tier_2_category || "",
-        CostType: c.cost_type, Budget: c.budget_amount, Year: c.year || "", Month: c.month || "",
-      })));
-      XLSX.utils.book_append_sheet(wb, catSheet, "Budget Categories");
-    }
+    const catRows = budgetCategories
+      .filter((c) => c.project_id === selectedProjectId && yearMatch(c))
+      .map((c) => ({
+        "Cost Type": c.cost_type || "",
+        "Tier 1 Category": c.tier_1_category || "",
+        "Tier 2 Category": c.tier_2_category || "",
+        "Tier 3 Category": c.tier_3_category || "",
+        "Name": c.name || "",
+        "Description": c.description || "",
+        "Budget Amount": c.budget_amount ?? 0,
+        "Month": c.month || "",
+        "Year": c.year || "",
+        "Level": "Category",
+      }));
 
-    // Line items
-    const lis = lineItems.filter((li) => li.project_id === project.id);
-    if (lis.length > 0) {
-      const liSheet = XLSX.utils.json_to_sheet(lis.map((li) => ({
-        Name: li.name, Tier1: li.tier_1_category, Tier2: li.tier_2_category || "",
-        CostType: li.cost_type, Budget: li.budget_amount, Year: li.year || "", Month: li.month || "",
-        Description: li.description || "",
-      })));
-      XLSX.utils.book_append_sheet(wb, liSheet, "Line Items");
-    }
+    const liRows = lineItems
+      .filter((li) => li.project_id === selectedProjectId && yearMatch(li))
+      .map((li) => ({
+        "Cost Type": li.cost_type || "",
+        "Tier 1 Category": li.tier_1_category || "",
+        "Tier 2 Category": li.tier_2_category || "",
+        "Tier 3 Category": li.tier_3_category || "",
+        "Name": li.name || "",
+        "Description": li.description || "",
+        "Budget Amount": li.budget_amount ?? 0,
+        "Month": li.month || "",
+        "Year": li.year || "",
+        "Level": "Line Item",
+      }));
 
-    // Revenue streams
-    const rs = revenueStreams.filter((r) => r.project_id === project.id);
-    if (rs.length > 0) {
-      const rsSheet = XLSX.utils.json_to_sheet(rs.map((r) => ({
-        CreditType: r.credit_type, Description: r.description, Vintage: r.vintage || "",
-        EstimatedVolume: r.estimated_volume, EstimatedPricePerUnit: r.estimated_price_per_unit,
-        EstimatedRevenue: (r.estimated_volume || 0) * (r.estimated_price_per_unit || 0),
-        ActualVolume: r.actual_volume || 0, ActualRevenue: r.actual_revenue || 0,
-        Status: r.verification_status,
-      })));
-      XLSX.utils.book_append_sheet(wb, rsSheet, "Revenue Streams");
-    }
+    const siRows = subItems
+      .filter((si) => {
+        const parentLi = lineItems.find((li) => li.id === si.line_item_id);
+        return parentLi && parentLi.project_id === selectedProjectId && yearMatch(si);
+      })
+      .map((si) => ({
+        "Cost Type": si.cost_type || "",
+        "Tier 1 Category": si.tier_1_category || "",
+        "Tier 2 Category": si.tier_2_category || "",
+        "Tier 3 Category": si.tier_3_category || "",
+        "Name": si.name || "",
+        "Description": si.description || "",
+        "Budget Amount": si.budget_amount ?? 0,
+        "Month": si.month || "",
+        "Year": si.year || "",
+        "Level": "Sub-Item",
+      }));
 
-    // Funding sources
-    const fs = fundingSources.filter((f) => f.project_id === project.id);
-    if (fs.length > 0) {
-      const fsSheet = XLSX.utils.json_to_sheet(fs.map((f) => ({
-        FunderName: f.funder_name, FundingType: f.funding_type, TotalAmount: f.total_amount,
-        DrawnAmount: f.drawn_amount || 0, Status: f.status, StartDate: f.start_date, EndDate: f.end_date || "",
-      })));
-      XLSX.utils.book_append_sheet(wb, fsSheet, "Funding Sources");
-    }
+    return [...catRows, ...liRows, ...siRows];
+  }, [selectedProjectId, selectedYear, budgetCategories, lineItems, subItems]);
 
-    // Transactions
-    const txs = transactions.filter((t) => t.project_id === project.id);
-    if (txs.length > 0) {
-      const txSheet = XLSX.utils.json_to_sheet(txs.map((t) => ({
-        Date: t.date, Type: t.transaction_type, Amount: t.amount,
-        Description: t.description, Reference: t.reference || "",
-        Tier1: t.tier_1_category || "", Tier2: t.tier_2_category || "", Year: t.year || "",
-      })));
-      XLSX.utils.book_append_sheet(wb, txSheet, "Transactions");
-    }
+  const revenueRows = useMemo(() => {
+    if (selectedProjectId === "all") return [];
+    return revenueStreams
+      .filter((r) => {
+        const yearMatch = selectedYear === "all" || r.vintage === selectedYear;
+        return r.project_id === selectedProjectId && yearMatch;
+      })
+      .map((r) => ({
+        "Ecosystem Service": r.credit_type || "",
+        "Description": r.description || "",
+        "Est. BoI (Volume)": r.estimated_volume ?? 0,
+        "Est. Price / Unit": r.estimated_price_per_unit ?? 0,
+        "Status": r.verification_status || "",
+        "Vintage Year": r.vintage || "",
+        "Date of Sale": r.date_of_sale || "",
+        "Notes": r.notes || "",
+      }));
+  }, [selectedProjectId, selectedYear, revenueStreams]);
 
-    XLSX.writeFile(wb, `${project.name.replace(/\s+/g, "_")}_data_${moment().format("YYYY-MM-DD")}.xlsx`);
-  };
+  const fundingRows = useMemo(() => {
+    if (selectedProjectId === "all") return [];
+    return fundingSources
+      .filter((f) => f.project_id === selectedProjectId)
+      .map((f) => ({
+        "Funding Type": f.funding_type || "",
+        "Funder Name": f.funder_name || "",
+        "Total Amount": f.total_amount ?? 0,
+        "Drawn Amount": f.drawn_amount ?? 0,
+        "Start Date": f.start_date || "",
+        "End Date": f.end_date || "",
+        "Status": f.status || "",
+        "Terms": f.terms || "",
+      }));
+  }, [selectedProjectId, fundingSources]);
 
-  const downloadAll = () => {
-    const wb = XLSX.utils.book_new();
+  const transactionRows = useMemo(() => {
+    if (selectedProjectId === "all") return [];
+    return transactions
+      .filter((t) => {
+        const isRevenue = t.transaction_type === "REVENUE";
+        const yearMatch = selectedYear === "all" || t.year === selectedYear || (t.date && new Date(t.date).getFullYear().toString() === selectedYear);
+        return t.project_id === selectedProjectId && isRevenue && yearMatch;
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .map((t) => ({
+        "Date": t.date ? moment(t.date).format("DD MMM YYYY") : "",
+        "Ecosystem Service": t.vintage || t.tier_1_category || "",
+        "Description": t.description || "",
+        "Amount": t.amount ?? 0,
+        "Reference": t.reference || "",
+      }));
+  }, [selectedProjectId, selectedYear, transactions]);
 
-    const projectRows = filteredProjects.map((p) => {
-      const stats = getProjectStats(p.id);
-      return {
-        Name: p.name, Type: p.project_type, Location: p.location, "Site Area (ha)": p.site_area,
-        Status: p.status, "Start Date": p.start_date, "End Date": p.end_date || "",
-        "Total Budget": stats.totalBudget, "Total Expenses": stats.totalExpenses,
-        "Est. Revenue": stats.totalRevenue, "Total Funding": stats.totalFunding,
-        "Line Items": stats.lineItems, "Revenue Streams": stats.revenueStreams,
-        "Funding Sources": stats.fundingSources, "Transactions": stats.transactions,
-      };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projectRows), "Projects");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transactions), "All Transactions");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lineItems), "All Line Items");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(revenueStreams), "All Revenue Streams");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fundingSources), "All Funding Sources");
+  const slug = selectedProject ? selectedProject.name.replace(/\s+/g, "_") : "export";
 
-    XLSX.writeFile(wb, `all_project_data_${moment().format("YYYY-MM-DD")}.xlsx`);
-  };
+  const budgetCols = [
+    { key: "Level", label: "Level" },
+    { key: "Cost Type", label: "Cost Type" },
+    { key: "Tier 1 Category", label: "Tier 1" },
+    { key: "Tier 2 Category", label: "Tier 2" },
+    { key: "Tier 3 Category", label: "Tier 3" },
+    { key: "Name", label: "Name" },
+    { key: "Description", label: "Description" },
+    { key: "Budget Amount", label: "Budget Amount" },
+    { key: "Month", label: "Month" },
+    { key: "Year", label: "Year" },
+  ];
 
-  const statusColors = {
-    PLANNING: "bg-slate-100 text-slate-700",
-    ACTIVE: "bg-emerald-100 text-emerald-700",
-    MAINTENANCE: "bg-blue-100 text-blue-700",
-    COMPLETED: "bg-purple-100 text-purple-700",
-  };
+  const revenueCols = [
+    { key: "Ecosystem Service", label: "Ecosystem Service" },
+    { key: "Description", label: "Description" },
+    { key: "Est. BoI (Volume)", label: "Est. BoI" },
+    { key: "Est. Price / Unit", label: "Est. Price" },
+    { key: "Status", label: "Status" },
+    { key: "Vintage Year", label: "Year" },
+    { key: "Date of Sale", label: "Date of Sale" },
+    { key: "Notes", label: "Notes" },
+  ];
+
+  const fundingCols = [
+    { key: "Funding Type", label: "Funding Type" },
+    { key: "Funder Name", label: "Funder Name" },
+    { key: "Total Amount", label: "Total Amount" },
+    { key: "Drawn Amount", label: "Drawn Amount" },
+    { key: "Start Date", label: "Start Date" },
+    { key: "End Date", label: "End Date" },
+    { key: "Status", label: "Status" },
+    { key: "Terms", label: "Terms" },
+  ];
+
+  const transactionCols = [
+    { key: "Date", label: "Date" },
+    { key: "Ecosystem Service", label: "Ecosystem Service" },
+    { key: "Description", label: "Description" },
+    { key: "Amount", label: "Amount" },
+    { key: "Reference", label: "Reference" },
+  ];
 
   return (
     <AdminLayout currentPageName="AdminProjectData">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Project Data</h1>
-          <p className="text-sm text-slate-500 mt-1">{filteredProjects.length} projects — view and download all project data</p>
-        </div>
-        <Button onClick={downloadAll} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Download className="h-4 w-4 mr-2" />
-          Download All (XLSX)
-        </Button>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Project Data Repository</h1>
+        <p className="text-sm text-slate-500 mt-1">Select a user, project, and year to explore and export data</p>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search projects..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="PLANNING">Planning</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* ── Step Filters ── */}
+      <Card className="mb-6">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Step 1: User */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                <User className="h-3.5 w-3.5" /> Step 1 — Select User
+              </label>
+              <Select value={selectedUserId} onValueChange={handleUserChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All users" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.email})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Project List */}
-      {loadingProjects ? (
-        <div className="text-center py-12 text-slate-500">Loading projects...</div>
-      ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">No projects found</div>
+            {/* Step 2: Project */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                <FolderTree className="h-3.5 w-3.5" /> Step 2 — Select Project
+              </label>
+              <Select value={selectedProjectId} onValueChange={handleProjectChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {userProjects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Step 3: Year */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                <Calendar className="h-3.5 w-3.5" /> Step 3 — Select Year
+              </label>
+              <Select value={selectedYear} onValueChange={setSelectedYear} disabled={selectedProjectId === "all"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {availableYears.map((y) => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Context pill */}
+          {selectedProject && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-slate-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+              <FolderTree className="h-4 w-4 text-emerald-600" />
+              Viewing: <span className="font-semibold text-emerald-800">{selectedProject.name}</span>
+              {selectedYear !== "all" && <> · Year <span className="font-semibold text-emerald-800">{selectedYear}</span></>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Tables ── */}
+      {selectedProjectId === "all" ? (
+        <div className="text-center py-16 text-slate-400">
+          <FolderTree className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Select a project to view its data tables</p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {filteredProjects.map((project) => {
-            const stats = getProjectStats(project.id);
-            const isExpanded = expandedProject === project.id;
-
-            return (
-              <Card key={project.id} className="border border-slate-200">
-                <div
-                  className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => setExpandedProject(isExpanded ? null : project.id)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                      <FolderTree className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-slate-900">{project.name}</h3>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[project.status] || "bg-slate-100 text-slate-600"}`}>
-                          {project.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-500">{project.location} · {project.project_type?.replace(/_/g, " ")}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="hidden md:flex gap-6 text-sm text-slate-600">
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">{formatCurrency(stats.totalBudget)}</p>
-                        <p className="text-xs text-slate-400">Budget</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">{formatCurrency(stats.totalExpenses)}</p>
-                        <p className="text-xs text-slate-400">Spent</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-emerald-700">{formatCurrency(stats.totalRevenue)}</p>
-                        <p className="text-xs text-slate-400">Est. Revenue</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => { e.stopPropagation(); downloadProjectData(project); }}
-                      >
-                        <Download className="h-3.5 w-3.5 mr-1.5" />
-                        Download
-                      </Button>
-                      {isExpanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
-                    </div>
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div className="border-t border-slate-100 p-5 bg-slate-50/50">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-                      {[
-                        { label: "Line Items", value: stats.lineItems },
-                        { label: "Revenue Streams", value: stats.revenueStreams },
-                        { label: "Funding Sources", value: stats.fundingSources },
-                        { label: "Transactions", value: stats.transactions },
-                      ].map((s) => (
-                        <div key={s.label} className="bg-white rounded-lg p-3 border border-slate-200 text-center">
-                          <p className="text-xl font-bold text-slate-900">{s.value}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Recent Transactions Preview */}
-                    {transactions.filter((t) => t.project_id === project.id).length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Recent Transactions</p>
-                        <div className="space-y-1.5">
-                          {transactions
-                            .filter((t) => t.project_id === project.id)
-                            .sort((a, b) => new Date(b.date) - new Date(a.date))
-                            .slice(0, 5)
-                            .map((tx) => (
-                              <div key={tx.id} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-slate-100 text-sm">
-                                <span className="text-slate-700">{tx.description}</span>
-                                <div className="flex items-center gap-3">
-                                  <Badge variant="outline" className="text-xs">{tx.transaction_type}</Badge>
-                                  <span className={`font-semibold ${tx.transaction_type === "REVENUE" || tx.transaction_type === "FUNDING_DRAWDOWN" ? "text-emerald-600" : "text-red-600"}`}>
-                                    {formatCurrency(tx.amount)}
-                                  </span>
-                                  <span className="text-slate-400 text-xs">{tx.date ? moment(tx.date).format("DD MMM YYYY") : "—"}</span>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
+        <>
+          <DataTable
+            title="Budget Builder"
+            columns={budgetCols}
+            rows={budgetRows}
+            csvFilename={`${slug}_budget_${selectedYear}.csv`}
+            xlsxFilename={`${slug}_budget_${selectedYear}.xlsx`}
+          />
+          <DataTable
+            title="Revenue Streams"
+            columns={revenueCols}
+            rows={revenueRows}
+            csvFilename={`${slug}_revenue_${selectedYear}.csv`}
+            xlsxFilename={`${slug}_revenue_${selectedYear}.xlsx`}
+          />
+          <DataTable
+            title="Funding Sources"
+            columns={fundingCols}
+            rows={fundingRows}
+            csvFilename={`${slug}_funding.csv`}
+            xlsxFilename={`${slug}_funding.xlsx`}
+          />
+          <DataTable
+            title="Revenue Transactions"
+            columns={transactionCols}
+            rows={transactionRows}
+            csvFilename={`${slug}_transactions_${selectedYear}.csv`}
+            xlsxFilename={`${slug}_transactions_${selectedYear}.xlsx`}
+          />
+        </>
       )}
     </AdminLayout>
   );
