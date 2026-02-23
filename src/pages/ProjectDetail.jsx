@@ -13,7 +13,9 @@ import BudgetTab from "../components/project/BudgetTab";
 import RevenueTab from "../components/project/RevenueTab";
 import FundingTab from "../components/project/FundingTab";
 import TransactionsTab from "../components/project/TransactionsTab";
+import CollaboratorsPanel from "../components/project/CollaboratorsPanel";
 import LoadingState from "../components/shared/LoadingState";
+import { useProjectAccess } from "../components/shared/useProjectAccess";
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
