@@ -23,6 +23,7 @@ const navItems = [
   { label: "Reports", icon: FileText, page: "Reports" },
   { label: "Compliance", icon: Shield, page: "Compliance" },
   { label: "Audit Log", icon: History, page: "AuditLog", adminOnly: true },
+  { label: "Settings", icon: Settings, page: "Settings" },
 ];
 
 export default function Layout({ children, currentPageName }) {
