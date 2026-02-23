@@ -47,7 +47,7 @@ const TIER_2_OPTIONS = {
   "Other": ["Other"]
 };
 
-export default function BudgetLineItemForm({ projectId, categoryId, lineItem, onClose }) {
+export default function BudgetLineItemForm({ projectId, categoryId, lineItem, workingYear, onClose }) {
   const [formData, setFormData] = useState({
     tier_1_category: lineItem?.tier_1_category || "",
     tier_2_category: lineItem?.tier_2_category || "",
@@ -57,7 +57,7 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, on
     description: lineItem?.description || "",
     budget_amount: lineItem?.budget_amount || 0,
     month: lineItem?.month || "",
-    year: lineItem?.year || new Date().getFullYear().toString(),
+    year: lineItem?.year || workingYear || new Date().getFullYear().toString(),
   });
 
   const queryClient = useQueryClient();
