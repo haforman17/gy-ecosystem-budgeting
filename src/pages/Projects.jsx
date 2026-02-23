@@ -74,16 +74,11 @@ export default function Projects() {
   });
 
   React.useEffect(() => {
-    if (projects.length > 0 && orderedProjects.length === 0) {
-      setOrderedProjects(projects);
-    }
-  }, [projects]);
-
-  React.useEffect(() => {
     if (!manageMode) {
       setOrderedProjects(projects);
     }
-  }, [manageMode, projects]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allProjects, manageMode]);
 
   if (isLoading) return <LoadingState message="Loading projects..." />;
 
