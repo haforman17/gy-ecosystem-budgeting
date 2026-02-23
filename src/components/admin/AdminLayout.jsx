@@ -10,6 +10,7 @@ import {
   Mail,
   Settings,
   Menu,
+  Database,
   X,
   ChevronRight,
   ExternalLink,
