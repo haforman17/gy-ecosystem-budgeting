@@ -109,7 +109,18 @@ export default function ProjectEdit() {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
+  const access = useProjectAccess(project, currentUser);
+
   if (isLoading || !form) return <LoadingState message="Loading project..." />;
+
+  if (project && currentUser && !access.canEdit) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Access Denied (403)</h2>
+        <p className="text-slate-500 text-sm">You do not have permission to edit this project.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
