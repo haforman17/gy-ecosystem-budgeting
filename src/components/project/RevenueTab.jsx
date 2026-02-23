@@ -17,19 +17,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const COLORS = ["#059669", "#0891b2", "#7c3aed", "#db2777", "#d97706"];
 
-export default function RevenueTab({ projectId, revenueStreams }) {
+export default function RevenueTab({ projectId, revenueStreams, transactions = [], workingYear }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [selectedRevenue, setSelectedRevenue] = useState(null);
   const queryClient = useQueryClient();
-
-  // Fetch transactions to calculate real values
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["transactions", projectId],
-    queryFn: () => base44.entities.Transaction.filter({ project_id: projectId }),
-    initialData: [],
-    enabled: !!projectId,
-  });
 
   // Calculate real values from transactions for each revenue stream
   const revenueCalcs = useMemo(() => {
