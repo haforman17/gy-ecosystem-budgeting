@@ -50,7 +50,7 @@ export default function ProjectNew() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const result = await base44.entities.Project.create(data);
+      const result = await base44.entities.Project.create({ ...data, owner_id: currentUser?.id, collaborators: [] });
       await base44.entities.AuditLog.create({
         action: "Created Project",
         entity_type: "Project",
