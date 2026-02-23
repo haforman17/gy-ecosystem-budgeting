@@ -284,9 +284,9 @@ export default function BudgetBuilderTab({ projectId }) {
       for (const row of jsonData) {
         const type = row["Type"];
         const rawCostType = row["Cost Type"];
-        let cost_type = null;
-        if (rawCostType === "Op Costs" || rawCostType === "OP_COSTS") cost_type = "OP_COSTS";
-        else if (rawCostType === "COGS") cost_type = "COGS";
+        let cost_type = "OP_COSTS"; // default
+        if (rawCostType === "COGS") cost_type = "COGS";
+        else if (rawCostType === "Op Costs" || rawCostType === "OP_COSTS") cost_type = "OP_COSTS";
 
         const commonData = {
           tier_1_category: row["Tier 1 Category"],
