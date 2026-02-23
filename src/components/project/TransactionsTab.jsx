@@ -388,6 +388,7 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
           lineItems={lineItems}
           revenueStreams={revenueStreams}
           fundingSources={fundingSources}
+          workingYear={workingYear}
           onClose={() => setShowForm(false)}
         />
       )}
@@ -399,6 +400,7 @@ export default function TransactionsTab({ projectId, transactions, lineItems, re
           lineItems={lineItems}
           revenueStreams={revenueStreams}
           fundingSources={fundingSources}
+          workingYear={workingYear}
           onClose={() => setEditItem(null)}
         />
       )}
