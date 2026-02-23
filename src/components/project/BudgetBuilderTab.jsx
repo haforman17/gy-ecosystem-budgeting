@@ -332,9 +332,9 @@ export default function BudgetBuilderTab({ projectId, workingYear }) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["subItems", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["budgetCategories", projectId, workingYear] });
+      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId, workingYear] });
+      queryClient.invalidateQueries({ queryKey: ["subItems", projectId, workingYear] });
 
       toast.success(`Imported: ${categoriesCreated} categories, ${lineItemsCreated} line items, ${subItemsCreated} sub-items`);
       if (fileInputRef.current) fileInputRef.current.value = "";
