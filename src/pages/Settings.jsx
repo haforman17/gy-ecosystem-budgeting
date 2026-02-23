@@ -97,6 +97,10 @@ export default function Settings() {
         <TabsContent value="config">
           <BudgetPicklistSection />
         </TabsContent>
+
+        <TabsContent value="access">
+          <ProjectAccessSection user={user} />
+        </TabsContent>
       </Tabs>
     </div>
   );
