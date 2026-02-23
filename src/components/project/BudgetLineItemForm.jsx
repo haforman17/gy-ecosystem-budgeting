@@ -82,7 +82,7 @@ export default function BudgetLineItemForm({ projectId, categoryId, lineItem, wo
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["lineItems", projectId, formData.year] });
       toast.success(lineItem ? "Line item updated" : "Line item created");
       onClose();
     },
