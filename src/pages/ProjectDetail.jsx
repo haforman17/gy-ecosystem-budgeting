@@ -194,6 +194,11 @@ export default function ProjectDetail() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Collaborators panel — owner only */}
+      {access.isOwner && currentUser && (
+        <CollaboratorsPanel project={project} currentUser={currentUser} />
+      )}
     </div>
   );
 }
