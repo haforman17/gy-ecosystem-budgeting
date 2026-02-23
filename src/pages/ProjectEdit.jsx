@@ -36,6 +36,11 @@ export default function ProjectEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
