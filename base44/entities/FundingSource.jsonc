@@ -1,0 +1,102 @@
+{
+  "name": "FundingSource",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "funding_type": {
+      "type": "string",
+      "enum": [
+        "GRANT",
+        "PRIVATE_DEBT",
+        "GOVERNMENT_DEBT",
+        "EQUITY"
+      ],
+      "description": "Type of funding"
+    },
+    "funder_name": {
+      "type": "string",
+      "description": "Name of the funder"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total funding amount in GBP"
+    },
+    "drawn_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Amount drawn down in GBP"
+    },
+    "interest_rate": {
+      "type": "number",
+      "description": "Interest rate for debt (percentage)"
+    },
+    "repayment_term_months": {
+      "type": "number",
+      "description": "Repayment term in months for debt"
+    },
+    "eligible_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Eligible spending categories for grants"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Funding start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Funding end date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "ACTIVE",
+        "DRAWN",
+        "CLOSED"
+      ],
+      "default": "PENDING",
+      "description": "Funding status"
+    },
+    "terms": {
+      "type": "string",
+      "description": "Funding terms and conditions"
+    },
+    "covenant_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of debt covenant definitions"
+    },
+    "reporting_schedule": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of reporting requirements"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Funder contact name"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Funder contact email"
+    }
+  },
+  "required": [
+    "project_id",
+    "funding_type",
+    "funder_name",
+    "total_amount",
+    "start_date"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "ForecastScenario",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "scenario_type": {
+      "type": "string",
+      "enum": [
+        "MONTHLY",
+        "QUARTERLY",
+        "YEARLY_30YR"
+      ],
+      "description": "Type of forecast scenario"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year for monthly/quarterly scenarios (not used for yearly 30yr)"
+    },
+    "scenario_name": {
+      "type": "string",
+      "description": "Name of the scenario (e.g., Base Case, Conservative, Optimistic)"
+    },
+    "scenario_data": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Snapshot of forecast data - array of period objects with all editable fields"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description"
+    },
+    "assumptions": {
+      "type": "object",
+      "description": "Forecast assumptions for yearly scenarios"
+    }
+  },
+  "required": [
+    "project_id",
+    "scenario_type",
+    "scenario_name",
+    "scenario_data"
+  ]
+}

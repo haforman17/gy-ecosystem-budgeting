@@ -1,0 +1,105 @@
+{
+  "name": "RevenueStream",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "credit_type": {
+      "type": "string",
+      "enum": [
+        "CARBON",
+        "BIODIVERSITY",
+        "CARBON_PLUS",
+        "PILOT_PROJECTS",
+        "SPARE_ES_TYPE",
+        "NFM",
+        "WATER_QUALITY",
+        "RECREATION"
+      ],
+      "description": "Type of environmental credit / ecosystem service"
+    },
+    "description": {
+      "type": "string",
+      "description": "Revenue stream description"
+    },
+    "vintage": {
+      "type": "string",
+      "description": "Vintage year e.g. 2025"
+    },
+    "estimated_volume": {
+      "type": "number",
+      "description": "Estimated volume in units/credits"
+    },
+    "estimated_price_per_unit": {
+      "type": "number",
+      "description": "Estimated price per unit in GBP"
+    },
+    "estimated_revenue": {
+      "type": "number",
+      "description": "Estimated total revenue in GBP"
+    },
+    "actual_volume": {
+      "type": "number",
+      "default": 0,
+      "description": "Actual/real volume sold"
+    },
+    "actual_price_per_unit": {
+      "type": "number",
+      "default": 0,
+      "description": "Actual/real price per unit in GBP"
+    },
+    "actual_revenue": {
+      "type": "number",
+      "default": 0,
+      "description": "Actual revenue received in GBP"
+    },
+    "date_of_sale": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of sale"
+    },
+    "generation_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When credit generation starts"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "VERIFIED",
+        "SOLD"
+      ],
+      "default": "PENDING",
+      "description": "Verification status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "price_per_unit": {
+      "type": "number",
+      "description": "Legacy field - use estimated_price_per_unit"
+    },
+    "verified_volume": {
+      "type": "number",
+      "default": 0,
+      "description": "Legacy field"
+    },
+    "sold_volume": {
+      "type": "number",
+      "default": 0,
+      "description": "Legacy field"
+    }
+  },
+  "required": [
+    "project_id",
+    "credit_type",
+    "description",
+    "estimated_volume",
+    "estimated_price_per_unit",
+    "generation_start_date"
+  ]
+}

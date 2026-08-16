@@ -1,0 +1,88 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Project description"
+    },
+    "project_type": {
+      "type": "string",
+      "enum": [
+        "WOODLAND_CREATION",
+        "PEATLAND_RESTORATION",
+        "WETLAND",
+        "AGROFORESTRY",
+        "MIXED"
+      ],
+      "description": "Type of nature-based project"
+    },
+    "location": {
+      "type": "string",
+      "description": "Project location"
+    },
+    "site_area": {
+      "type": "number",
+      "description": "Site area in hectares"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project end date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PLANNING",
+        "ACTIVE",
+        "MAINTENANCE",
+        "COMPLETED"
+      ],
+      "default": "PLANNING",
+      "description": "Project status"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of project owner"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Associated organization ID"
+    },
+    "collaborators": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Array of user IDs who are collaborators on this project"
+    },
+    "is_archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether project is archived"
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When project was archived"
+    }
+  },
+  "required": [
+    "name",
+    "project_type",
+    "location",
+    "site_area",
+    "start_date",
+    "status"
+  ]
+}

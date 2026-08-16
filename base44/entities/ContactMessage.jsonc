@@ -1,0 +1,63 @@
+{
+  "name": "ContactMessage",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Sender name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Sender email"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Message subject"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message content"
+    },
+    "message_type": {
+      "type": "string",
+      "enum": [
+        "GENERAL",
+        "SUPPORT",
+        "SALES",
+        "DEMO_REQUEST",
+        "PARTNERSHIP"
+      ],
+      "description": "Type of inquiry"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "NEW",
+        "IN_PROGRESS",
+        "RESOLVED",
+        "ARCHIVED"
+      ],
+      "default": "NEW",
+      "description": "Message status"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When response was sent"
+    },
+    "responded_by": {
+      "type": "string",
+      "description": "User ID who responded"
+    },
+    "response": {
+      "type": "string",
+      "description": "Response message"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "message",
+    "message_type"
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "line_item_id": {
+      "type": "string",
+      "description": "Associated line item ID (optional)"
+    },
+    "revenue_stream_id": {
+      "type": "string",
+      "description": "Associated revenue stream ID (optional)"
+    },
+    "funding_source_id": {
+      "type": "string",
+      "description": "Associated funding source ID (optional)"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "EXPENSE",
+        "REVENUE",
+        "FUNDING_DRAWDOWN",
+        "DEBT_REPAYMENT",
+        "TAX_PAYMENT",
+        "COGS",
+        "OPERATING_COST"
+      ],
+      "description": "Type of transaction"
+    },
+    "cost_type": {
+      "type": "string",
+      "enum": [
+        "OP_COSTS",
+        "COGS"
+      ],
+      "description": "Cost Type classification: OP_COSTS (Operating Costs) or COGS (Cost of Goods Sold) - required for expense transactions"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Transaction amount in GBP"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Transaction date"
+    },
+    "description": {
+      "type": "string",
+      "description": "Transaction description"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Reference number"
+    },
+    "vintage": {
+      "type": "string",
+      "description": "Vintage year for revenue transactions"
+    },
+    "units_quantity": {
+      "type": "number",
+      "description": "Units quantity for revenue transactions"
+    },
+    "unit_price": {
+      "type": "number",
+      "description": "Unit price for revenue transactions"
+    },
+    "sale_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Sale date for revenue transactions"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "URL to uploaded receipt or supporting document"
+    },
+    "tier_1_category": {
+      "type": "string",
+      "description": "Tier 1 category for budget matching"
+    },
+    "tier_2_category": {
+      "type": "string",
+      "description": "Tier 2 category for budget matching"
+    },
+    "tier_3_category": {
+      "type": "string",
+      "description": "Tier 3 category for budget matching"
+    },
+    "budget_item_name": {
+      "type": "string",
+      "description": "Budget item name for matching"
+    },
+    "year": {
+      "type": "string",
+      "description": "Year for budget matching"
+    }
+  },
+  "required": [
+    "project_id",
+    "transaction_type",
+    "amount",
+    "date",
+    "description"
+  ]
+}

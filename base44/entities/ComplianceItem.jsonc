@@ -1,0 +1,91 @@
+{
+  "name": "ComplianceItem",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "funding_source_id": {
+      "type": "string",
+      "description": "Related funding source ID"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "GRANT_REPORT",
+        "DEBT_COVENANT",
+        "VERIFICATION_DEADLINE",
+        "REGULATORY_FILING"
+      ],
+      "description": "Type of compliance item"
+    },
+    "title": {
+      "type": "string",
+      "description": "Compliance item title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Due date"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date completed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "UPCOMING",
+        "DUE_SOON",
+        "OVERDUE",
+        "COMPLETED"
+      ],
+      "default": "UPCOMING",
+      "description": "Current status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ],
+      "default": "MEDIUM",
+      "description": "Priority level"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "User ID assigned to this item"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of attachment file URLs"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "reminder_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether reminder has been sent"
+    }
+  },
+  "required": [
+    "project_id",
+    "item_type",
+    "title",
+    "due_date",
+    "priority"
+  ]
+}

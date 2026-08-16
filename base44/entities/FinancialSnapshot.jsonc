@@ -1,0 +1,84 @@
+{
+  "name": "FinancialSnapshot",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "snapshot_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of this snapshot"
+    },
+    "snapshot_type": {
+      "type": "string",
+      "enum": [
+        "MONTHLY",
+        "QUARTERLY",
+        "ANNUAL",
+        "CUSTOM"
+      ],
+      "description": "Type of snapshot"
+    },
+    "total_assets": {
+      "type": "number",
+      "default": 0,
+      "description": "Total assets"
+    },
+    "total_liabilities": {
+      "type": "number",
+      "default": 0,
+      "description": "Total liabilities"
+    },
+    "total_equity": {
+      "type": "number",
+      "default": 0,
+      "description": "Total equity"
+    },
+    "total_revenue": {
+      "type": "number",
+      "default": 0,
+      "description": "Total revenue for period"
+    },
+    "total_expenses": {
+      "type": "number",
+      "default": 0,
+      "description": "Total expenses for period"
+    },
+    "net_income": {
+      "type": "number",
+      "default": 0,
+      "description": "Net income for period"
+    },
+    "operating_cash_flow": {
+      "type": "number",
+      "default": 0,
+      "description": "Operating cash flow"
+    },
+    "investing_cash_flow": {
+      "type": "number",
+      "default": 0,
+      "description": "Investing cash flow"
+    },
+    "financing_cash_flow": {
+      "type": "number",
+      "default": 0,
+      "description": "Financing cash flow"
+    },
+    "cash_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Cash balance at snapshot date"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Detailed breakdown and additional data"
+    }
+  },
+  "required": [
+    "project_id",
+    "snapshot_date",
+    "snapshot_type"
+  ]
+}

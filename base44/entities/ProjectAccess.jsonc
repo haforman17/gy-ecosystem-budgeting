@@ -1,0 +1,33 @@
+{
+  "name": "ProjectAccess",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID with access"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project ID"
+    },
+    "access_level": {
+      "type": "string",
+      "enum": [
+        "OWNER",
+        "EDITOR",
+        "VIEWER"
+      ],
+      "default": "VIEWER",
+      "description": "Level of access to the project"
+    },
+    "granted_by": {
+      "type": "string",
+      "description": "User ID who granted access"
+    }
+  },
+  "required": [
+    "user_id",
+    "project_id",
+    "access_level"
+  ]
+}

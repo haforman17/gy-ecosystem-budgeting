@@ -1,0 +1,98 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Organization name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly unique identifier"
+    },
+    "website": {
+      "type": "string",
+      "description": "Organization website URL"
+    },
+    "industry": {
+      "type": "string",
+      "default": "Land Restoration",
+      "description": "Industry sector"
+    },
+    "size": {
+      "type": "string",
+      "enum": [
+        "SOLO",
+        "SMALL_2_10",
+        "MEDIUM_11_50",
+        "LARGE_50_PLUS"
+      ],
+      "description": "Organization size"
+    },
+    "country": {
+      "type": "string",
+      "default": "United Kingdom",
+      "description": "Country"
+    },
+    "account_status": {
+      "type": "string",
+      "enum": [
+        "TRIAL",
+        "ACTIVE",
+        "SUSPENDED",
+        "CANCELLED"
+      ],
+      "description": "Account status"
+    },
+    "subscription_tier": {
+      "type": "string",
+      "enum": [
+        "FREE_TRIAL",
+        "STARTER",
+        "PROFESSIONAL",
+        "ENTERPRISE"
+      ],
+      "description": "Subscription tier"
+    },
+    "trial_start_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Trial start date"
+    },
+    "trial_end_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Trial end date"
+    },
+    "subscription_start_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Subscription start date"
+    },
+    "billing_email": {
+      "type": "string",
+      "description": "Billing contact email"
+    },
+    "max_projects": {
+      "type": "integer",
+      "default": 2,
+      "description": "Maximum allowed projects"
+    },
+    "max_users": {
+      "type": "integer",
+      "default": 10,
+      "description": "Maximum allowed users"
+    },
+    "storage_used_mb": {
+      "type": "number",
+      "default": 0,
+      "description": "Storage used in MB"
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "account_status",
+    "subscription_tier"
+  ]
+}

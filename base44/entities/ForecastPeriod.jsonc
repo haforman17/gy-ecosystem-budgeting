@@ -1,0 +1,74 @@
+{
+  "name": "ForecastPeriod",
+  "type": "object",
+  "properties": {
+    "scenario_id": {
+      "type": "string",
+      "description": "Associated forecast scenario ID"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year number (1-30)"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Period start date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Period end date"
+    },
+    "projected_revenue": {
+      "type": "number",
+      "default": 0,
+      "description": "Projected revenue for this period"
+    },
+    "projected_expenses": {
+      "type": "number",
+      "default": 0,
+      "description": "Projected expenses for this period"
+    },
+    "projected_cash_flow": {
+      "type": "number",
+      "default": 0,
+      "description": "Projected net cash flow for this period"
+    },
+    "carbon_credits_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Carbon credits generated (tCO2e)"
+    },
+    "bng_habitat_units_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "BNG habitat units generated"
+    },
+    "bng_hedgerow_units_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "BNG hedgerow units generated"
+    },
+    "watercourse_units_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Watercourse units generated"
+    },
+    "nfm_credits_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "NFM credits generated"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes for this period"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "year",
+    "period_start",
+    "period_end"
+  ]
+}

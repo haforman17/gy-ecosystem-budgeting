@@ -1,0 +1,76 @@
+{
+  "type": "object",
+  "properties": {
+    "is_super_admin": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has super admin access"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Associated organization ID"
+    },
+    "last_login_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last login timestamp"
+    },
+    "job_title": {
+      "type": "string",
+      "description": "Job title"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department"
+    },
+    "default_currency": {
+      "type": "string",
+      "enum": [
+        "GBP",
+        "USD",
+        "EUR",
+        "CAD",
+        "AUD"
+      ],
+      "default": "GBP",
+      "description": "Preferred currency"
+    },
+    "date_format": {
+      "type": "string",
+      "enum": [
+        "DD/MM/YYYY",
+        "MM/DD/YYYY",
+        "YYYY-MM-DD"
+      ],
+      "default": "DD/MM/YYYY",
+      "description": "Preferred date format"
+    },
+    "app_role": {
+      "type": "string",
+      "enum": [
+        "Admin",
+        "Project Manager",
+        "Finance Viewer"
+      ],
+      "default": "Project Manager",
+      "description": "Application role"
+    },
+    "can_edit_budgets": {
+      "type": "boolean",
+      "default": true,
+      "description": "Can edit budgets"
+    },
+    "can_edit_forecasts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Can edit forecasts"
+    }
+  },
+  "name": "User",
+  "required": [
+    "organization_id",
+    "last_login_at",
+    "job_title",
+    "department"
+  ]
+}

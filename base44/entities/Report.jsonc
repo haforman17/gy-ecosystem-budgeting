@@ -1,0 +1,82 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "LENDER_PACKAGE",
+        "GRANT_COMPLIANCE",
+        "INVESTOR_UPDATE",
+        "CUSTOM"
+      ],
+      "description": "Type of report"
+    },
+    "report_name": {
+      "type": "string",
+      "description": "Report name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Report description"
+    },
+    "generated_by": {
+      "type": "string",
+      "description": "User ID who generated the report"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Report period start date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Report period end date"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "PDF",
+        "EXCEL",
+        "BOTH"
+      ],
+      "default": "PDF",
+      "description": "Report format"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to generated report file"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "File size in bytes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "GENERATING",
+        "COMPLETED",
+        "FAILED"
+      ],
+      "default": "GENERATING",
+      "description": "Report generation status"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Report configuration and parameters"
+    }
+  },
+  "required": [
+    "project_id",
+    "report_type",
+    "report_name",
+    "generated_by",
+    "period_start",
+    "period_end"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "name": "UsageMetrics",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "Associated organization ID"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Associated user ID (optional)"
+    },
+    "metric_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the metric was recorded"
+    },
+    "metric_type": {
+      "type": "string",
+      "enum": [
+        "PROJECT_CREATED",
+        "TRANSACTION_ADDED",
+        "REPORT_GENERATED",
+        "LOGIN",
+        "PAGE_VIEW",
+        "EXPORT_DOWNLOADED"
+      ],
+      "description": "Type of metric"
+    },
+    "count": {
+      "type": "integer",
+      "default": 1,
+      "description": "Count of occurrences"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metric data"
+    }
+  },
+  "required": [
+    "organization_id",
+    "metric_date",
+    "metric_type"
+  ]
+}

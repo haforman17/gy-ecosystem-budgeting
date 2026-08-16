@@ -1,0 +1,42 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who performed the action"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Related project ID"
+    },
+    "action": {
+      "type": "string",
+      "description": "Action performed (e.g., Created Project, Updated Transaction)"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Type of entity affected (e.g., Project, Transaction, RevenueStream)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the affected entity"
+    },
+    "changes": {
+      "type": "object",
+      "description": "Before/after values of changes"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of the user"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser user agent"
+    }
+  },
+  "required": [
+    "action",
+    "entity_type"
+  ]
+}

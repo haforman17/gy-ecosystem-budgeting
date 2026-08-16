@@ -1,0 +1,76 @@
+{
+  "name": "LineItem",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Associated project ID"
+    },
+    "budget_category_id": {
+      "type": "string",
+      "description": "Associated budget category ID"
+    },
+    "tier_1_category": {
+      "type": "string",
+      "enum": [
+        "Habitat Conversion Costs",
+        "Operating Costs",
+        "Other"
+      ],
+      "description": "Tier 1 category"
+    },
+    "tier_2_category": {
+      "type": "string",
+      "description": "Tier 2 category (dependent on Tier 1)"
+    },
+    "tier_3_category": {
+      "type": "string",
+      "description": "Tier 3 category (free text)"
+    },
+    "cost_type": {
+      "type": "string",
+      "enum": [
+        "OP_COSTS",
+        "COGS"
+      ],
+      "description": "Cost Type classification: OP_COSTS (Operating Costs) or COGS (Cost of Goods Sold)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Line item name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Line item description"
+    },
+    "budget_amount": {
+      "type": "number",
+      "description": "Budgeted amount in GBP"
+    },
+    "actual_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Actual amount spent in GBP"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month"
+    },
+    "year": {
+      "type": "string",
+      "description": "Year"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "project_id",
+    "tier_1_category",
+    "name",
+    "budget_amount",
+    "year",
+    "cost_type"
+  ]
+}

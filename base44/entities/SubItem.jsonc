@@ -1,0 +1,68 @@
+{
+  "name": "SubItem",
+  "type": "object",
+  "properties": {
+    "line_item_id": {
+      "type": "string",
+      "description": "Parent line item ID"
+    },
+    "tier_1_category": {
+      "type": "string",
+      "enum": [
+        "Habitat Conversion Costs",
+        "Operating Costs",
+        "Other"
+      ],
+      "description": "Tier 1 category"
+    },
+    "tier_2_category": {
+      "type": "string",
+      "description": "Tier 2 category (dependent on Tier 1)"
+    },
+    "tier_3_category": {
+      "type": "string",
+      "description": "Tier 3 category (free text)"
+    },
+    "cost_type": {
+      "type": "string",
+      "enum": [
+        "OP_COSTS",
+        "COGS"
+      ],
+      "description": "Cost Type classification: OP_COSTS (Operating Costs) or COGS (Cost of Goods Sold)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Sub-item name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Sub-item description"
+    },
+    "budget_amount": {
+      "type": "number",
+      "description": "Budget amount for this sub-item"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month"
+    },
+    "year": {
+      "type": "string",
+      "description": "Year"
+    },
+    "actual_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Actual amount spent"
+    }
+  },
+  "required": [
+    "line_item_id",
+    "tier_1_category",
+    "name",
+    "budget_amount",
+    "year",
+    "cost_type"
+  ]
+}

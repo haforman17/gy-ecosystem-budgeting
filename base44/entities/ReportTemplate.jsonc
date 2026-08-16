@@ -1,0 +1,51 @@
+{
+  "name": "ReportTemplate",
+  "type": "object",
+  "properties": {
+    "template_name": {
+      "type": "string",
+      "description": "Template name"
+    },
+    "template_type": {
+      "type": "string",
+      "enum": [
+        "LENDER_MONTHLY",
+        "GRANT_QUARTERLY",
+        "INVESTOR_ANNUAL",
+        "BOARD_REPORT",
+        "CUSTOM"
+      ],
+      "description": "Type of template"
+    },
+    "description": {
+      "type": "string",
+      "description": "Template description"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of section configurations"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a default template"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID who created the template"
+    },
+    "organization_specific": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether template is organization-specific"
+    }
+  },
+  "required": [
+    "template_name",
+    "template_type",
+    "description"
+  ]
+}
